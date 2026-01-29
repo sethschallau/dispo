@@ -7,6 +7,7 @@
 
 import SwiftUI
 import FirebaseCore
+import FirebaseFirestore
 import Combine
 
 struct EventDetailView: View {
@@ -23,6 +24,11 @@ struct EventDetailView: View {
     @State private var showEditSheet = false
     @State private var showDeleteConfirmation = false
     @State private var isDeleting = false
+    
+    // RSVP state
+    @State private var rsvps: [RSVP] = []
+    @State private var myRSVP: RSVP?
+    @State private var rsvpListener: ListenerRegistration?
     
     var body: some View {
         ScrollView {
@@ -45,6 +51,11 @@ struct EventDetailView: View {
                         Divider()
                         Text(description)
                     }
+                    
+                    Divider()
+                    
+                    // RSVP Section
+                    rsvpSection
                     
                     Divider()
                     
@@ -123,6 +134,7 @@ struct EventDetailView: View {
         .onAppear {
             if let eventId = event.id {
                 commentsService.loadComments(for: eventId)
+                loadRSVPs()
             }
             // Request notification permission on first view
             Task {
@@ -131,6 +143,7 @@ struct EventDetailView: View {
         }
         .onDisappear {
             commentsService.stopListening()
+            rsvpListener?.remove()
         }
     }
     
@@ -183,6 +196,66 @@ struct EventDetailView: View {
         Rectangle()
             .fill(Color.gray.opacity(0.2))
             .frame(height: 200)
+    }
+    
+    // MARK: - RSVP Section
+    
+    private var rsvpSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Are you going?")
+                .font(.headline)
+            
+            // RSVP Buttons
+            HStack(spacing: 12) {
+                ForEach(RSVP.RSVPStatus.allCases, id: \.self) { status in
+                    rsvpButton(for: status)
+                }
+            }
+            
+            // Attendee counts
+            let goingCount = rsvps.filter { $0.status == .going }.count
+            let maybeCount = rsvps.filter { $0.status == .maybe }.count
+            
+            if goingCount > 0 || maybeCount > 0 {
+                HStack(spacing: 8) {
+                    if goingCount > 0 {
+                        Label("\(goingCount) going", systemImage: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                    }
+                    if maybeCount > 0 {
+                        Label("\(maybeCount) maybe", systemImage: "questionmark.circle.fill")
+                            .foregroundColor(.orange)
+                    }
+                }
+                .font(.subheadline)
+            }
+        }
+    }
+    
+    private func rsvpButton(for status: RSVP.RSVPStatus) -> some View {
+        let isSelected = myRSVP?.status == status
+        
+        return Button(action: { setRSVP(status) }) {
+            VStack(spacing: 4) {
+                Image(systemName: status.icon)
+                    .font(.title2)
+                Text(status.displayName)
+                    .font(.caption)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(isSelected ? statusColor(status) : Color.gray.opacity(0.15))
+            .foregroundColor(isSelected ? .white : .primary)
+            .cornerRadius(10)
+        }
+    }
+    
+    private func statusColor(_ status: RSVP.RSVPStatus) -> Color {
+        switch status {
+        case .going: return .green
+        case .maybe: return .orange
+        case .declined: return .red
+        }
     }
     
     // MARK: - Meta Info
@@ -269,6 +342,45 @@ struct EventDetailView: View {
             .disabled(newComment.trimmingCharacters(in: .whitespaces).isEmpty || isSubmitting)
         }
         .padding(.top, 8)
+    }
+    
+    // MARK: - RSVP Actions
+    
+    private func setRSVP(_ status: RSVP.RSVPStatus) {
+        guard let eventId = event.id,
+              let userId = authService.currentUserId else { return }
+        
+        Task {
+            let service = EventsService()
+            
+            // If tapping the same status, remove RSVP
+            if myRSVP?.status == status {
+                try? await service.removeRSVP(eventId: eventId, userId: userId)
+                await MainActor.run { myRSVP = nil }
+            } else {
+                // Set new RSVP
+                let userName = authService.currentUser?.fullName
+                try? await service.setRSVP(eventId: eventId, userId: userId, userName: userName, status: status)
+                await MainActor.run {
+                    myRSVP = RSVP(userId: userId, userName: userName, status: status)
+                }
+            }
+        }
+    }
+    
+    private func loadRSVPs() {
+        guard let eventId = event.id else { return }
+        let service = EventsService()
+        
+        // Listen to RSVPs
+        rsvpListener = service.listenToRSVPs(eventId: eventId) { [self] rsvps in
+            self.rsvps = rsvps
+            
+            // Find current user's RSVP
+            if let userId = authService.currentUserId {
+                self.myRSVP = rsvps.first { $0.userId == userId }
+            }
+        }
     }
     
     // MARK: - Event Actions

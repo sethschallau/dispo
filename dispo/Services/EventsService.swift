@@ -201,6 +201,48 @@ class EventsService: ObservableObject {
         let doc = try await db.collection("events").document(eventId).getDocument()
         return try? doc.data(as: Event.self)
     }
+    
+    // MARK: - RSVPs
+    
+    /// Set RSVP for an event
+    func setRSVP(eventId: String, userId: String, userName: String?, status: RSVP.RSVPStatus) async throws {
+        let rsvp = RSVP(userId: userId, userName: userName, status: status)
+        try db.collection("events").document(eventId)
+            .collection("rsvps").document(userId)
+            .setData(from: rsvp)
+    }
+    
+    /// Remove RSVP from an event
+    func removeRSVP(eventId: String, userId: String) async throws {
+        try await db.collection("events").document(eventId)
+            .collection("rsvps").document(userId)
+            .delete()
+    }
+    
+    /// Get all RSVPs for an event
+    func getRSVPs(eventId: String) async throws -> [RSVP] {
+        let snapshot = try await db.collection("events").document(eventId)
+            .collection("rsvps").getDocuments()
+        return snapshot.documents.compactMap { try? $0.data(as: RSVP.self) }
+    }
+    
+    /// Get current user's RSVP for an event
+    func getMyRSVP(eventId: String, userId: String) async throws -> RSVP? {
+        let doc = try await db.collection("events").document(eventId)
+            .collection("rsvps").document(userId).getDocument()
+        return try? doc.data(as: RSVP.self)
+    }
+    
+    /// Listen to RSVPs for an event
+    func listenToRSVPs(eventId: String, completion: @escaping ([RSVP]) -> Void) -> ListenerRegistration {
+        return db.collection("events").document(eventId)
+            .collection("rsvps")
+            .addSnapshotListener { snapshot, error in
+                guard let documents = snapshot?.documents else { return }
+                let rsvps = documents.compactMap { try? $0.data(as: RSVP.self) }
+                completion(rsvps)
+            }
+    }
 }
 
 // MARK: - Errors
