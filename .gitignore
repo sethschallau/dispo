@@ -1,0 +1,26 @@
+# Xcode
+*.xcworkspace
+*.xcuserstate
+*.xcuserdatad
+*.xcsettings
+*.xcodeproj/project.xcworkspace/
+*.xcodeproj/xcuserdata/
+DerivedData/
+build/
+
+# Firebase
+GoogleService-Info.plist
+
+# SwiftPM / CocoaPods (if ever used)
+.build/
+Packages/
+.swiftpm/
+Pods/
+Podfile.lock
+Cartfile.resolved
+
+# Misc
+*.swp
+*.DS_Store
+.env
+
