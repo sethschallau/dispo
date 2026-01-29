@@ -12,29 +12,10 @@ struct MainTabView: View {
     
     var body: some View {
         TabView {
-            // Feed Tab (placeholder)
+            // Feed Tab
             NavigationView {
-                VStack(spacing: 20) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 60))
-                        .foregroundColor(.blue)
-                    
-                    Text("Welcome, \(authService.currentUser?.fullName ?? "User")!")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    
-                    Text("Feed view coming soon...")
-                        .foregroundColor(.secondary)
-                    
-                    Spacer().frame(height: 40)
-                    
-                    Button(action: { authService.logout() }) {
-                        Label("Logout", systemImage: "rectangle.portrait.and.arrow.right")
-                            .foregroundColor(.red)
-                    }
-                }
-                .padding()
-                .navigationTitle("Feed")
+                FeedView()
+                    .environmentObject(authService)
             }
             .tabItem {
                 Label("Feed", systemImage: "list.bullet")
@@ -42,8 +23,7 @@ struct MainTabView: View {
             
             // Groups Tab (placeholder)
             NavigationView {
-                Text("Groups coming soon...")
-                    .foregroundColor(.secondary)
+                groupsPlaceholder
                     .navigationTitle("Groups")
             }
             .tabItem {
@@ -52,55 +32,90 @@ struct MainTabView: View {
             
             // Calendar Tab (placeholder)
             NavigationView {
-                Text("Calendar coming soon...")
-                    .foregroundColor(.secondary)
+                calendarPlaceholder
                     .navigationTitle("Calendar")
             }
             .tabItem {
                 Label("Calendar", systemImage: "calendar")
             }
             
-            // Profile Tab (placeholder)
+            // Profile Tab
             NavigationView {
-                VStack(spacing: 16) {
-                    Image(systemName: "person.circle.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(.gray)
-                    
-                    Text(authService.currentUser?.fullName ?? "User")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    
-                    Text("@\(authService.currentUser?.username ?? "username")")
-                        .foregroundColor(.secondary)
-                    
-                    if let bio = authService.currentUser?.bio, !bio.isEmpty {
-                        Text(bio)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 8)
-                    }
-                    
-                    Spacer()
-                    
-                    Button(action: { authService.logout() }) {
-                        Text("Logout")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.red.opacity(0.1))
-                            .foregroundColor(.red)
-                            .cornerRadius(12)
-                    }
-                    .padding(.horizontal, 32)
-                    .padding(.bottom, 32)
-                }
-                .padding()
-                .navigationTitle("Profile")
+                profileView
+                    .navigationTitle("Profile")
             }
             .tabItem {
                 Label("Profile", systemImage: "person")
             }
         }
+    }
+    
+    // MARK: - Groups Placeholder
+    
+    private var groupsPlaceholder: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "person.3")
+                .font(.system(size: 60))
+                .foregroundColor(.secondary)
+            Text("Groups")
+                .font(.headline)
+            Text("Coming soon...")
+                .foregroundColor(.secondary)
+        }
+    }
+    
+    // MARK: - Calendar Placeholder
+    
+    private var calendarPlaceholder: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "calendar")
+                .font(.system(size: 60))
+                .foregroundColor(.secondary)
+            Text("Calendar")
+                .font(.headline)
+            Text("Coming soon...")
+                .foregroundColor(.secondary)
+        }
+    }
+    
+    // MARK: - Profile View
+    
+    private var profileView: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            
+            Image(systemName: "person.circle.fill")
+                .font(.system(size: 80))
+                .foregroundColor(.gray)
+            
+            Text(authService.currentUser?.fullName ?? "User")
+                .font(.title2)
+                .fontWeight(.semibold)
+            
+            Text("@\(authService.currentUser?.username ?? "username")")
+                .foregroundColor(.secondary)
+            
+            if let bio = authService.currentUser?.bio, !bio.isEmpty {
+                Text(bio)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .padding(.top, 8)
+            }
+            
+            Spacer()
+            
+            Button(action: { authService.logout() }) {
+                Text("Logout")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.red.opacity(0.1))
+                    .foregroundColor(.red)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal, 32)
+            .padding(.bottom, 32)
+        }
+        .padding()
     }
 }
 
