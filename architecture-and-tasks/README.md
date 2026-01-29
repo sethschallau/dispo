@@ -1,6 +1,8 @@
 # Dispo - Architecture and Tasks
 
-Dispo is a social availability and event coordination app for iOS (SwiftUI) with a Firebase backend.
+Dispo is a social availability and event coordination app built with **Expo/React Native** and Firebase.
+
+> **Platform Note:** We originally prototyped in Swift/SwiftUI but pivoted to Expo after extensive UI/UX exploration. The native tooling wasn't giving us the creative flexibility we needed — React Native (with Reanimated, Skia, etc.) better enables our artistic vision. See `/archive/swift-ios/` for the original implementation.
 
 ## Overview
 
@@ -16,24 +18,13 @@ architecture-and-tasks/
 │   ├── events.md
 │   ├── comments.md
 │   └── notifications.md
-├── mvp/              # MVP implementation tasks (ordered)
-│   ├── 00-firebase-setup.md
-│   ├── 01-fake-login.md
-│   ├── 02-main-navigation.md
-│   ├── 03-group-management.md
-│   ├── 04-event-creation.md
-│   ├── 05-feed-view.md
-│   ├── 06-event-detail.md
-│   ├── 07-calendar-view.md
-│   ├── 08-profile-view.md
-│   ├── 09-notifications-view.md
-│   ├── 10-security-rules.md
-│   └── 11-testing.md
-└── full/             # Post-MVP features
-    ├── 00-authentication.md
-    ├── 01-calendar-integration.md
-    ├── 02-push-notifications.md
-    └── 03-enhanced-features.md
+├── expo/             # Active implementation tasks (Expo/React Native)
+│   ├── 00-project-setup.md
+│   ├── 01-firebase-config.md
+│   ├── ...
+│   └── 15-production.md
+├── mvp/              # [ARCHIVED] Original Swift MVP tasks
+└── full/             # [ARCHIVED] Original Swift post-MVP tasks
 ```
 
 ## Task File Format
@@ -62,13 +53,13 @@ Instructions for adding test data to verify the implementation.
 
 ## Execution Order
 
-### MVP Phase
+### Expo Implementation (Active)
 1. Start with `schemas/` to understand the data model
-2. Execute `mvp/` tasks in numerical order (00 → 11)
+2. Execute `expo/` tasks in numerical order (00 → 15)
 3. Each task builds on the previous
 
-### Full Application Phase
-After MVP is complete, execute `full/` tasks in any order based on priority.
+### Archived Swift Tasks
+The `mvp/` and `full/` directories contain the original Swift implementation tasks. Preserved for reference but no longer active.
 
 ## Firebase Project
 
@@ -82,4 +73,5 @@ After MVP is complete, execute `full/` tasks in any order based on priority.
 2. **Client-side Visibility**: Privacy rules enforced client-side until auth is added
 3. **Subcollections**: Comments and RSVPs stored as subcollections under events
 4. **Firestore**: NoSQL document database, schema-flexible
-5. **SwiftUI**: Modern declarative UI framework for iOS
+5. **Expo/React Native**: Cross-platform with rich animation capabilities (Reanimated, Skia)
+6. **TypeScript**: Type safety across the codebase
