@@ -184,7 +184,7 @@ struct CreateEventView: View {
                     imageUrl = try await ref.downloadURL().absoluteString
                 }
                 
-                // Create event
+                // Create event with invite code
                 let event = Event(
                     title: title.trimmingCharacters(in: .whitespaces),
                     description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description.trimmingCharacters(in: .whitespaces),
@@ -194,7 +194,9 @@ struct CreateEventView: View {
                     visibility: visibility.rawValue,
                     location: location.trimmingCharacters(in: .whitespaces).isEmpty ? nil : location.trimmingCharacters(in: .whitespaces),
                     imageUrl: imageUrl,
-                    excludedUserIds: []
+                    excludedUserIds: [],
+                    inviteCode: Event.generateInviteCode(),
+                    invitedUserIds: []
                 )
                 
                 try eventRef.setData(from: event)

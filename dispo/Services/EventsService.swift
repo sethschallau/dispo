@@ -243,6 +243,31 @@ class EventsService: ObservableObject {
                 completion(rsvps)
             }
     }
+    
+    // MARK: - Event Invitations
+    
+    /// Find an event by invite code
+    func findEvent(byCode code: String) async throws -> Event? {
+        let snapshot = try await db.collection("events")
+            .whereField("inviteCode", isEqualTo: code.uppercased())
+            .limit(to: 1)
+            .getDocuments()
+        
+        return snapshot.documents.first.flatMap { try? $0.data(as: Event.self) }
+    }
+    
+    /// Join an event by adding user to invitedUserIds
+    func joinEventByCode(_ eventId: String, userId: String) async throws {
+        try await db.collection("events").document(eventId).updateData([
+            "invitedUserIds": FieldValue.arrayUnion([userId])
+        ])
+    }
+    
+    /// Check if user is invited to an event
+    func isUserInvited(eventId: String, userId: String) async throws -> Bool {
+        let event = try await getEvent(eventId)
+        return event?.invitedUserIds?.contains(userId) ?? false
+    }
 }
 
 // MARK: - Errors

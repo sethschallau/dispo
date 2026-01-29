@@ -9,6 +9,7 @@ import SwiftUI
 import FirebaseCore
 import FirebaseFirestore
 import Combine
+import UIKit
 
 struct EventDetailView: View {
     @State var event: Event
@@ -29,6 +30,10 @@ struct EventDetailView: View {
     @State private var rsvps: [RSVP] = []
     @State private var myRSVP: RSVP?
     @State private var rsvpListener: ListenerRegistration?
+    
+    // Share state
+    @State private var showShareSheet = false
+    @State private var showCopiedToast = false
     
     var body: some View {
         ScrollView {
@@ -56,6 +61,12 @@ struct EventDetailView: View {
                     
                     // RSVP Section
                     rsvpSection
+                    
+                    // Share Section (for event creator)
+                    if event.creatorId == authService.currentUserId, event.inviteCode != nil {
+                        Divider()
+                        shareSection
+                    }
                     
                     Divider()
                     
@@ -196,6 +207,79 @@ struct EventDetailView: View {
         Rectangle()
             .fill(Color.gray.opacity(0.2))
             .frame(height: 200)
+    }
+    
+    // MARK: - Share Section
+    
+    private var shareSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Invite Friends")
+                .font(.headline)
+            
+            if let code = event.inviteCode {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Event Code")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(code)
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .fontDesign(.monospaced)
+                    }
+                    
+                    Spacer()
+                    
+                    Button(action: copyCode) {
+                        Image(systemName: showCopiedToast ? "checkmark" : "doc.on.doc")
+                            .foregroundColor(showCopiedToast ? .green : .blue)
+                    }
+                }
+                .padding()
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(10)
+                
+                Button(action: { showShareSheet = true }) {
+                    Label("Share Event", systemImage: "square.and.arrow.up")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+            }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            ShareSheet(items: [shareText])
+        }
+    }
+    
+    private var shareText: String {
+        var text = "Join my event on Dispo!\n\n"
+        text += "📅 \(event.title)\n"
+        text += "🕐 \(event.eventDate.formatted(date: .abbreviated, time: .shortened))\n"
+        if let location = event.location, !location.isEmpty {
+            text += "📍 \(location)\n"
+        }
+        if let code = event.inviteCode {
+            text += "\nEvent code: \(code)"
+        }
+        return text
+    }
+    
+    private func copyCode() {
+        guard let code = event.inviteCode else { return }
+        UIPasteboard.general.string = code
+        
+        withAnimation {
+            showCopiedToast = true
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation {
+                showCopiedToast = false
+            }
+        }
     }
     
     // MARK: - RSVP Section
@@ -476,6 +560,18 @@ struct CommentRowView: View {
     }
 }
 
+// MARK: - Share Sheet
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
 // MARK: - Preview
 
 #Preview {
@@ -487,7 +583,8 @@ struct CommentRowView: View {
             eventDate: Date().addingTimeInterval(86400 * 3),
             creatorId: "user1",
             visibility: "public",
-            location: "Downtown Raleigh"
+            location: "Downtown Raleigh",
+            inviteCode: "EVT-TEST"
         ))
         .environmentObject(AuthService.shared)
     }

@@ -15,6 +15,7 @@ struct FeedView: View {
     
     @State private var hasLoadedGroups = false
     @State private var showCreateEvent = false
+    @State private var showJoinEvent = false
     @StateObject private var notificationsService = NotificationsService()
     
     var body: some View {
@@ -48,13 +49,24 @@ struct FeedView: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { showCreateEvent = true }) {
+                Menu {
+                    Button(action: { showCreateEvent = true }) {
+                        Label("Create Event", systemImage: "plus.circle")
+                    }
+                    Button(action: { showJoinEvent = true }) {
+                        Label("Join by Code", systemImage: "ticket")
+                    }
+                } label: {
                     Image(systemName: "plus")
                 }
             }
         }
         .sheet(isPresented: $showCreateEvent) {
             CreateEventView()
+                .environmentObject(authService)
+        }
+        .sheet(isPresented: $showJoinEvent) {
+            JoinEventView()
                 .environmentObject(authService)
         }
         .onAppear {

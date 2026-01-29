@@ -22,6 +22,15 @@ struct Event: Codable, Identifiable {
     var excludedUserIds: [String]?
     var friendIds: [String]?
     var groupIds: [String]?
+    var inviteCode: String?       // Short code for sharing (e.g., "EVT-XK7M")
+    var invitedUserIds: [String]? // Users who joined via invite code
+    
+    /// Generate a random invite code
+    static func generateInviteCode() -> String {
+        let chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  // Exclude ambiguous O/0/I/1
+        let random = String((0..<4).map { _ in chars.randomElement()! })
+        return "EVT-\(random)"
+    }
 }
 
 enum EventVisibility: String, Codable, CaseIterable {
