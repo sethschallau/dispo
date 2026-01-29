@@ -51,6 +51,73 @@ class GroupsService: ObservableObject {
             }
     }
     
+    /// Create a new group
+    func createGroup(name: String, description: String?, ownerId: String) async throws -> String {
+        let groupRef = db.collection("groups").document()
+        let joinCode = generateJoinCode()
+        
+        let group = AppGroup(
+            name: name,
+            description: description,
+            members: [ownerId],
+            ownerId: ownerId,
+            joinCode: joinCode
+        )
+        
+        try groupRef.setData(from: group)
+        
+        // Update user's groupIds
+        try await db.collection("users").document(ownerId).updateData([
+            "groupIds": FieldValue.arrayUnion([groupRef.documentID])
+        ])
+        
+        return groupRef.documentID
+    }
+    
+    /// Join a group by join code
+    func joinGroup(code: String, userId: String) async throws {
+        // Find group by join code
+        let snapshot = try await db.collection("groups")
+            .whereField("joinCode", isEqualTo: code.uppercased())
+            .limit(to: 1)
+            .getDocuments()
+        
+        guard let groupDoc = snapshot.documents.first else {
+            throw GroupError.groupNotFound
+        }
+        
+        let groupId = groupDoc.documentID
+        
+        // Check if already a member
+        if let group = try? groupDoc.data(as: AppGroup.self),
+           group.members.contains(userId) {
+            throw GroupError.alreadyMember
+        }
+        
+        // Add user to group members
+        try await db.collection("groups").document(groupId).updateData([
+            "members": FieldValue.arrayUnion([userId])
+        ])
+        
+        // Update user's groupIds
+        try await db.collection("users").document(userId).updateData([
+            "groupIds": FieldValue.arrayUnion([groupId])
+        ])
+    }
+    
+    /// Leave a group
+    func leaveGroup(groupId: String, userId: String) async throws {
+        // Remove user from group members
+        try await db.collection("groups").document(groupId).updateData([
+            "members": FieldValue.arrayRemove([userId])
+        ])
+        
+        // Update user's groupIds
+        try await db.collection("users").document(userId).updateData([
+            "groupIds": FieldValue.arrayRemove([groupId])
+        ])
+    }
+    
     /// Get user's group IDs (for querying events)
     var userGroupIds: [String] {
         userGroups.compactMap { $0.id }
@@ -61,7 +128,27 @@ class GroupsService: ObservableObject {
         listener = nil
     }
     
+    /// Generate a random 6-character join code
+    private func generateJoinCode() -> String {
+        let letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // Excluding ambiguous chars
+        return String((0..<6).map { _ in letters.randomElement()! })
+    }
+    
     deinit {
         listener?.remove()
+    }
+}
+
+enum GroupError: LocalizedError {
+    case groupNotFound
+    case alreadyMember
+    
+    var errorDescription: String? {
+        switch self {
+        case .groupNotFound:
+            return "No group found with that code"
+        case .alreadyMember:
+            return "You're already a member of this group"
+        }
     }
 }

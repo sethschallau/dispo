@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 struct FeedView: View {
     @EnvironmentObject var authService: AuthService
@@ -13,6 +14,7 @@ struct FeedView: View {
     @StateObject private var groupsService = GroupsService()
     
     @State private var hasLoadedGroups = false
+    @State private var showCreateEvent = false
     
     var body: some View {
         Group {
@@ -25,6 +27,17 @@ struct FeedView: View {
             }
         }
         .navigationTitle("Feed")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: { showCreateEvent = true }) {
+                    Image(systemName: "plus")
+                }
+            }
+        }
+        .sheet(isPresented: $showCreateEvent) {
+            CreateEventView()
+                .environmentObject(authService)
+        }
         .onAppear {
             loadData()
         }

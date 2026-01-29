@@ -94,6 +94,21 @@ class AuthService: ObservableObject {
         }
     }
     
+    /// Update user profile
+    func updateProfile(name: String, bio: String) async throws {
+        guard let userId = currentUserId else { return }
+        
+        var updates: [String: Any] = [:]
+        updates["fullName"] = name
+        updates["bio"] = bio
+        
+        try await db.collection("users").document(userId).updateData(updates)
+        
+        // Update local user
+        currentUser?.fullName = name
+        currentUser?.bio = bio
+    }
+    
     /// Clear local session
     func logout() {
         currentUserId = nil

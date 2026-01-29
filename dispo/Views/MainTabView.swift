@@ -9,113 +9,50 @@ import SwiftUI
 
 struct MainTabView: View {
     @EnvironmentObject var authService: AuthService
+    @State private var selectedTab = 0
     
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             // Feed Tab
             NavigationView {
                 FeedView()
                     .environmentObject(authService)
             }
             .tabItem {
-                Label("Feed", systemImage: "list.bullet")
+                Label("Feed", systemImage: "house.fill")
             }
+            .tag(0)
             
-            // Groups Tab (placeholder)
+            // Calendar Tab
             NavigationView {
-                groupsPlaceholder
-                    .navigationTitle("Groups")
-            }
-            .tabItem {
-                Label("Groups", systemImage: "person.3")
-            }
-            
-            // Calendar Tab (placeholder)
-            NavigationView {
-                calendarPlaceholder
-                    .navigationTitle("Calendar")
+                CalendarView()
+                    .environmentObject(authService)
             }
             .tabItem {
                 Label("Calendar", systemImage: "calendar")
             }
+            .tag(1)
+            
+            // Groups Tab
+            NavigationView {
+                GroupsView()
+                    .environmentObject(authService)
+            }
+            .tabItem {
+                Label("Groups", systemImage: "person.3.fill")
+            }
+            .tag(2)
             
             // Profile Tab
             NavigationView {
-                profileView
-                    .navigationTitle("Profile")
+                ProfileView()
+                    .environmentObject(authService)
             }
             .tabItem {
-                Label("Profile", systemImage: "person")
+                Label("Profile", systemImage: "person.circle.fill")
             }
+            .tag(3)
         }
-    }
-    
-    // MARK: - Groups Placeholder
-    
-    private var groupsPlaceholder: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "person.3")
-                .font(.system(size: 60))
-                .foregroundColor(.secondary)
-            Text("Groups")
-                .font(.headline)
-            Text("Coming soon...")
-                .foregroundColor(.secondary)
-        }
-    }
-    
-    // MARK: - Calendar Placeholder
-    
-    private var calendarPlaceholder: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "calendar")
-                .font(.system(size: 60))
-                .foregroundColor(.secondary)
-            Text("Calendar")
-                .font(.headline)
-            Text("Coming soon...")
-                .foregroundColor(.secondary)
-        }
-    }
-    
-    // MARK: - Profile View
-    
-    private var profileView: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            
-            Image(systemName: "person.circle.fill")
-                .font(.system(size: 80))
-                .foregroundColor(.gray)
-            
-            Text(authService.currentUser?.fullName ?? "User")
-                .font(.title2)
-                .fontWeight(.semibold)
-            
-            Text("@\(authService.currentUser?.username ?? "username")")
-                .foregroundColor(.secondary)
-            
-            if let bio = authService.currentUser?.bio, !bio.isEmpty {
-                Text(bio)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .padding(.top, 8)
-            }
-            
-            Spacer()
-            
-            Button(action: { authService.logout() }) {
-                Text("Logout")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.red.opacity(0.1))
-                    .foregroundColor(.red)
-                    .cornerRadius(12)
-            }
-            .padding(.horizontal, 32)
-            .padding(.bottom, 32)
-        }
-        .padding()
     }
 }
 
