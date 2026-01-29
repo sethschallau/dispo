@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Combine
 import FirebaseFirestore
 
 @MainActor
@@ -100,3 +101,4 @@ class AuthService: ObservableObject {
         isLoggedIn = false
     }
 }
+

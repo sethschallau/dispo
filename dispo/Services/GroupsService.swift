@@ -6,9 +6,10 @@
 //
 
 import Foundation
+import Combine
 import FirebaseFirestore
 
-struct Group: Codable, Identifiable {
+struct AppGroup: Codable, Identifiable {
     @DocumentID var id: String?
     var name: String
     var description: String?
@@ -20,7 +21,7 @@ struct Group: Codable, Identifiable {
 
 @MainActor
 class GroupsService: ObservableObject {
-    @Published var userGroups: [Group] = []
+    @Published var userGroups: [AppGroup] = []
     @Published var isLoading = false
     
     private let db = Firestore.firestore()
@@ -45,7 +46,7 @@ class GroupsService: ObservableObject {
                 guard let documents = snapshot?.documents else { return }
                 
                 self.userGroups = documents.compactMap { doc in
-                    try? doc.data(as: Group.self)
+                    try? doc.data(as: AppGroup.self)
                 }
             }
     }

@@ -13,7 +13,7 @@ final class ServiceTests: XCTestCase {
     // MARK: - Group Model Tests
     
     func testGroupInitialization() throws {
-        let group = Group(
+        let group = AppGroup(
             id: "group123",
             name: "Test Group",
             description: "A test group",
@@ -31,7 +31,7 @@ final class ServiceTests: XCTestCase {
     }
     
     func testGroupMembership() throws {
-        let group = Group(
+        let group = AppGroup(
             name: "Test Group",
             members: ["user1", "user2"],
             ownerId: "user1"
@@ -167,3 +167,4 @@ final class ServiceTests: XCTestCase {
         XCTAssertTrue(upcomingEvent.eventDate >= now)
     }
 }
+

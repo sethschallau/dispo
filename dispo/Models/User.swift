@@ -17,3 +17,4 @@ struct User: Codable, Identifiable {
     var bio: String?
     @ServerTimestamp var createdAt: Timestamp?
 }
+

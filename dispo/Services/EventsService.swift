@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Combine
 import FirebaseFirestore
 
 @MainActor
@@ -151,3 +152,4 @@ class EventsService: ObservableObject {
         }
     }
 }
+

@@ -14,3 +14,4 @@ struct Comment: Codable, Identifiable {
     @ServerTimestamp var timestamp: Timestamp?
     var authorName: String?
 }
+
