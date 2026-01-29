@@ -152,9 +152,60 @@ class GroupsService: ObservableObject {
     }
 }
 
+    // MARK: - Admin Functions
+    
+    /// Remove a member from a group (owner only)
+    func removeMember(userId: String, from groupId: String) async throws {
+        // Remove user from group members
+        try await db.collection("groups").document(groupId).updateData([
+            "members": FieldValue.arrayRemove([userId])
+        ])
+        
+        // Update user's groupIds
+        try await db.collection("users").document(userId).updateData([
+            "groupIds": FieldValue.arrayRemove([groupId])
+        ])
+    }
+    
+    /// Transfer ownership to another member
+    func transferOwnership(groupId: String, to newOwnerId: String) async throws {
+        // Verify new owner is a member
+        let groupDoc = try await db.collection("groups").document(groupId).getDocument()
+        guard let group = try? groupDoc.data(as: AppGroup.self),
+              group.members.contains(newOwnerId) else {
+            throw GroupError.userNotMember
+        }
+        
+        try await db.collection("groups").document(groupId).updateData([
+            "ownerId": newOwnerId
+        ])
+    }
+    
+    /// Delete a group (owner only)
+    func deleteGroup(_ groupId: String) async throws {
+        // Get group to find members
+        let groupDoc = try await db.collection("groups").document(groupId).getDocument()
+        guard let group = try? groupDoc.data(as: AppGroup.self) else {
+            throw GroupError.groupNotFound
+        }
+        
+        // Remove group from all members' groupIds
+        for memberId in group.members {
+            try? await db.collection("users").document(memberId).updateData([
+                "groupIds": FieldValue.arrayRemove([groupId])
+            ])
+        }
+        
+        // Delete group document
+        try await db.collection("groups").document(groupId).delete()
+    }
+}
+
 enum GroupError: LocalizedError {
     case groupNotFound
     case alreadyMember
+    case userNotMember
+    case ownerCannotLeave
     
     var errorDescription: String? {
         switch self {
@@ -162,6 +213,10 @@ enum GroupError: LocalizedError {
             return "No group found with that code"
         case .alreadyMember:
             return "You're already a member of this group"
+        case .userNotMember:
+            return "User is not a member of this group"
+        case .ownerCannotLeave:
+            return "Transfer ownership before leaving the group"
         }
     }
 }

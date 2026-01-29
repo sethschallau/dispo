@@ -21,6 +21,10 @@ struct GroupDetailView: View {
     @State private var showAddMember = false
     @State private var members: [User] = []
     @State private var isLoadingMembers = true
+    @State private var showDeleteConfirm = false
+    @State private var showTransferSheet = false
+    @State private var memberToRemove: User?
+    @State private var isDeleting = false
     
     private var isOwner: Bool {
         authService.currentUserId == group.ownerId
@@ -95,6 +99,19 @@ struct GroupDetailView: View {
                                     .padding(.vertical, 2)
                                     .background(Color.orange.opacity(0.1))
                                     .cornerRadius(4)
+                            } else if isOwner {
+                                // Admin actions for non-owner members
+                                Menu {
+                                    Button(action: { transferOwnership(to: member) }) {
+                                        Label("Make Owner", systemImage: "crown")
+                                    }
+                                    Button(role: .destructive, action: { memberToRemove = member }) {
+                                        Label("Remove", systemImage: "person.badge.minus")
+                                    }
+                                } label: {
+                                    Image(systemName: "ellipsis.circle")
+                                        .foregroundColor(.secondary)
+                                }
                             }
                         }
                     }
@@ -110,8 +127,8 @@ struct GroupDetailView: View {
                 Text("Members (\(group.members.count))")
             }
             
-            // Leave Group Section
-            if authService.currentUserId != group.ownerId {
+            // Leave Group Section (for non-owners)
+            if !isOwner {
                 Section {
                     Button(role: .destructive, action: { showLeaveConfirm = true }) {
                         HStack {
@@ -125,6 +142,23 @@ struct GroupDetailView: View {
                         }
                     }
                     .disabled(isLeaving)
+                }
+            }
+            
+            // Owner Actions Section
+            if isOwner {
+                Section {
+                    Button(action: { showTransferSheet = true }) {
+                        Label("Transfer Ownership", systemImage: "crown")
+                    }
+                    
+                    Button(role: .destructive, action: { showDeleteConfirm = true }) {
+                        Label("Delete Group", systemImage: "trash")
+                    }
+                } header: {
+                    Text("Owner Actions")
+                } footer: {
+                    Text("Deleting the group will remove it for all members")
                 }
             }
         }
@@ -141,6 +175,43 @@ struct GroupDetailView: View {
                 excludeUserIds: group.members,
                 title: "Add Member"
             )
+        }
+        .sheet(isPresented: $showTransferSheet) {
+            TransferOwnershipSheet(
+                members: members.filter { $0.id != group.ownerId },
+                onTransfer: { user in transferOwnership(to: user) }
+            )
+        }
+        .confirmationDialog("Remove Member?", isPresented: .init(
+            get: { memberToRemove != nil },
+            set: { if !$0 { memberToRemove = nil } }
+        ), titleVisibility: .visible) {
+            Button("Remove", role: .destructive) {
+                if let member = memberToRemove {
+                    removeMember(member)
+                }
+            }
+            Button("Cancel", role: .cancel) { memberToRemove = nil }
+        } message: {
+            Text("Remove \(memberToRemove?.fullName ?? "this member") from the group?")
+        }
+        .confirmationDialog("Delete Group?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) { deleteGroup() }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This will permanently delete the group. All members will be removed. Events will remain but won't be associated with this group.")
+        }
+        .overlay {
+            if isDeleting {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                VStack {
+                    ProgressView()
+                    Text("Deleting...")
+                        .font(.caption)
+                        .foregroundColor(.white)
+                }
+            }
         }
         .task {
             await loadMembers()
@@ -169,10 +240,59 @@ struct GroupDetailView: View {
         Task {
             do {
                 try await groupsService.addMember(userId: userId, to: groupId)
-                // Refresh members
                 await loadMembers()
             } catch {
                 print("Error adding member: \(error)")
+            }
+        }
+    }
+    
+    private func removeMember(_ user: User) {
+        guard let userId = user.id, let groupId = group.id else { return }
+        
+        Task {
+            do {
+                try await groupsService.removeMember(userId: userId, from: groupId)
+                await MainActor.run {
+                    members.removeAll { $0.id == userId }
+                }
+            } catch {
+                print("Error removing member: \(error)")
+            }
+        }
+        memberToRemove = nil
+    }
+    
+    private func transferOwnership(to user: User) {
+        guard let userId = user.id, let groupId = group.id else { return }
+        
+        Task {
+            do {
+                try await groupsService.transferOwnership(groupId: groupId, to: userId)
+                // Dismiss or refresh - the view will show stale data since group is let
+                dismiss()
+            } catch {
+                print("Error transferring ownership: \(error)")
+            }
+        }
+    }
+    
+    private func deleteGroup() {
+        guard let groupId = group.id else { return }
+        isDeleting = true
+        
+        Task {
+            do {
+                try await groupsService.deleteGroup(groupId)
+                await MainActor.run {
+                    isDeleting = false
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    isDeleting = false
+                    print("Error deleting group: \(error)")
+                }
             }
         }
     }
@@ -206,6 +326,75 @@ struct GroupDetailView: View {
                 print("Error leaving group: \(error)")
             }
             isLeaving = false
+        }
+    }
+}
+
+// MARK: - Transfer Ownership Sheet
+
+struct TransferOwnershipSheet: View {
+    let members: [User]
+    let onTransfer: (User) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var showConfirm = false
+    @State private var selectedMember: User?
+    
+    var body: some View {
+        NavigationView {
+            List {
+                if members.isEmpty {
+                    Text("No other members to transfer to")
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(members) { member in
+                        Button(action: {
+                            selectedMember = member
+                            showConfirm = true
+                        }) {
+                            HStack {
+                                Circle()
+                                    .fill(Color.gray.opacity(0.2))
+                                    .frame(width: 36, height: 36)
+                                    .overlay(
+                                        Text(member.fullName.prefix(1).uppercased())
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.secondary)
+                                    )
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(member.fullName)
+                                        .font(.subheadline)
+                                    Text("@\(member.username)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                            }
+                        }
+                        .foregroundColor(.primary)
+                    }
+                }
+            }
+            .navigationTitle("Transfer Ownership")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+            .confirmationDialog("Transfer Ownership?", isPresented: $showConfirm, titleVisibility: .visible) {
+                Button("Transfer", role: .destructive) {
+                    if let member = selectedMember {
+                        onTransfer(member)
+                        dismiss()
+                    }
+                }
+                Button("Cancel", role: .cancel) { selectedMember = nil }
+            } message: {
+                Text("Make \(selectedMember?.fullName ?? "this person") the new owner? You will lose owner privileges.")
+            }
         }
     }
 }
