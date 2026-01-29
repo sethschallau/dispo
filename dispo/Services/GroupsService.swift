@@ -105,6 +105,19 @@ class GroupsService: ObservableObject {
         ])
     }
     
+    /// Add a member to a group
+    func addMember(userId: String, to groupId: String) async throws {
+        // Add user to group members
+        try await db.collection("groups").document(groupId).updateData([
+            "members": FieldValue.arrayUnion([userId])
+        ])
+        
+        // Update user's groupIds
+        try await db.collection("users").document(userId).updateData([
+            "groupIds": FieldValue.arrayUnion([groupId])
+        ])
+    }
+    
     /// Leave a group
     func leaveGroup(groupId: String, userId: String) async throws {
         // Remove user from group members

@@ -18,6 +18,13 @@ struct GroupDetailView: View {
     @State private var showCopiedToast = false
     @State private var showLeaveConfirm = false
     @State private var isLeaving = false
+    @State private var showAddMember = false
+    @State private var members: [User] = []
+    @State private var isLoadingMembers = true
+    
+    private var isOwner: Bool {
+        authService.currentUserId == group.ownerId
+    }
     
     var body: some View {
         List {
@@ -51,31 +58,52 @@ struct GroupDetailView: View {
             
             // Members Section
             Section {
-                ForEach(group.members, id: \.self) { memberId in
+                if isLoadingMembers {
                     HStack {
-                        Circle()
-                            .fill(Color.gray.opacity(0.2))
-                            .frame(width: 32, height: 32)
-                            .overlay(
-                                Image(systemName: "person.fill")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
-                            )
-                        
-                        Text(memberId)
-                            .font(.subheadline)
-                        
                         Spacer()
-                        
-                        if memberId == group.ownerId {
-                            Text("Owner")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 2)
-                                .background(Color.secondary.opacity(0.1))
-                                .cornerRadius(4)
+                        ProgressView()
+                        Spacer()
+                    }
+                } else {
+                    ForEach(members) { member in
+                        HStack {
+                            Circle()
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(width: 36, height: 36)
+                                .overlay(
+                                    Text(member.fullName.prefix(1).uppercased())
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.secondary)
+                                )
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(member.fullName)
+                                    .font(.subheadline)
+                                Text("@\(member.username)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            if member.id == group.ownerId {
+                                Text("Owner")
+                                    .font(.caption2)
+                                    .foregroundColor(.orange)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2)
+                                    .background(Color.orange.opacity(0.1))
+                                    .cornerRadius(4)
+                            }
                         }
+                    }
+                }
+                
+                // Add Member button (for owner)
+                if isOwner {
+                    Button(action: { showAddMember = true }) {
+                        Label("Add Member", systemImage: "person.badge.plus")
                     }
                 }
             } header: {
@@ -106,6 +134,46 @@ struct GroupDetailView: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("You'll no longer see events from this group")
+        }
+        .sheet(isPresented: $showAddMember) {
+            UserSearchView(
+                onSelect: { user in addMember(user) },
+                excludeUserIds: group.members,
+                title: "Add Member"
+            )
+        }
+        .task {
+            await loadMembers()
+        }
+    }
+    
+    private func loadMembers() async {
+        isLoadingMembers = true
+        do {
+            members = try await UserService.shared.getUsers(ids: group.members)
+            // Sort to put owner first
+            members.sort { user1, user2 in
+                if user1.id == group.ownerId { return true }
+                if user2.id == group.ownerId { return false }
+                return user1.fullName < user2.fullName
+            }
+        } catch {
+            print("Error loading members: \(error)")
+        }
+        isLoadingMembers = false
+    }
+    
+    private func addMember(_ user: User) {
+        guard let userId = user.id, let groupId = group.id else { return }
+        
+        Task {
+            do {
+                try await groupsService.addMember(userId: userId, to: groupId)
+                // Refresh members
+                await loadMembers()
+            } catch {
+                print("Error adding member: \(error)")
+            }
         }
     }
     
