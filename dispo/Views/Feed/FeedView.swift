@@ -15,6 +15,7 @@ struct FeedView: View {
     
     @State private var hasLoadedGroups = false
     @State private var showCreateEvent = false
+    @StateObject private var notificationsService = NotificationsService()
     
     var body: some View {
         Group {
@@ -28,6 +29,24 @@ struct FeedView: View {
         }
         .navigationTitle("Feed")
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                NavigationLink(destination: NotificationsView().environmentObject(authService)) {
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: "bell")
+                        
+                        if notificationsService.unreadCount > 0 {
+                            Text("\(min(notificationsService.unreadCount, 9))")
+                                .font(.caption2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .frame(width: 16, height: 16)
+                                .background(Color.red)
+                                .clipShape(Circle())
+                                .offset(x: 8, y: -8)
+                        }
+                    }
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showCreateEvent = true }) {
                     Image(systemName: "plus")
@@ -40,6 +59,9 @@ struct FeedView: View {
         }
         .onAppear {
             loadData()
+            if let userId = authService.currentUserId {
+                notificationsService.loadNotifications(for: userId)
+            }
         }
         .refreshable {
             await refreshData()

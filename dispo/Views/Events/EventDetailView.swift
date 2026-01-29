@@ -7,6 +7,7 @@
 
 import SwiftUI
 import FirebaseCore
+import Combine
 
 struct EventDetailView: View {
     let event: Event
@@ -16,6 +17,8 @@ struct EventDetailView: View {
     
     @State private var newComment = ""
     @State private var isSubmitting = false
+    @State private var showReminderPicker = false
+    @State private var reminderSet = false
     
     var body: some View {
         ScrollView {
@@ -48,14 +51,62 @@ struct EventDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: { showReminderPicker = true }) {
+                    Image(systemName: reminderSet ? "bell.fill" : "bell")
+                        .foregroundColor(reminderSet ? .orange : .blue)
+                }
+            }
+        }
+        .confirmationDialog("Set Reminder", isPresented: $showReminderPicker, titleVisibility: .visible) {
+            ForEach(NotificationsService.reminderOffsets, id: \.seconds) { option in
+                Button(option.label) {
+                    setReminder(offset: option.seconds)
+                }
+            }
+            if reminderSet {
+                Button("Remove Reminder", role: .destructive) {
+                    removeReminder()
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("When do you want to be reminded?")
+        }
         .onAppear {
             if let eventId = event.id {
                 commentsService.loadComments(for: eventId)
+            }
+            // Request notification permission on first view
+            Task {
+                _ = await NotificationsService.requestPermission()
             }
         }
         .onDisappear {
             commentsService.stopListening()
         }
+    }
+    
+    // MARK: - Reminder Actions
+    
+    private func setReminder(offset: TimeInterval) {
+        guard let eventId = event.id else { return }
+        
+        NotificationsService.scheduleEventReminder(
+            eventId: eventId,
+            eventTitle: event.title,
+            eventDate: event.eventDate,
+            reminderOffset: offset
+        )
+        
+        reminderSet = true
+    }
+    
+    private func removeReminder() {
+        guard let eventId = event.id else { return }
+        NotificationsService.cancelEventReminders(eventId: eventId)
+        reminderSet = false
     }
     
     // MARK: - Header Image
