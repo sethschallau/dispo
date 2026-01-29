@@ -24,3 +24,5 @@ Cartfile.resolved
 *.DS_Store
 .env
 
+service-account.json
+node_modules/
