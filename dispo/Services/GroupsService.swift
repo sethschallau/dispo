@@ -150,8 +150,7 @@ class GroupsService: ObservableObject {
     deinit {
         listener?.remove()
     }
-}
-
+    
     // MARK: - Admin Functions
     
     /// Remove a member from a group (owner only)

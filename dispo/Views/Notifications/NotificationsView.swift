@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import FirebaseCore
 
 struct NotificationsView: View {
     @EnvironmentObject var authService: AuthService
