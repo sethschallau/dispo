@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 import FirebaseFirestore
+import FirebaseStorage
 
 @MainActor
 class EventsService: ObservableObject {
@@ -267,6 +268,62 @@ class EventsService: ObservableObject {
     func isUserInvited(eventId: String, userId: String) async throws -> Bool {
         let event = try await getEvent(eventId)
         return event?.invitedUserIds?.contains(userId) ?? false
+    }
+    
+    // MARK: - Event Photos
+    
+    /// Upload a photo to an event
+    func uploadEventPhoto(eventId: String, imageData: Data, userId: String, userName: String?, caption: String?) async throws -> EventPhoto {
+        // Generate unique filename
+        let filename = "\(UUID().uuidString).jpg"
+        let storageRef = Storage.storage().reference()
+            .child("events/\(eventId)/photos/\(filename)")
+        
+        // Upload image
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpeg"
+        
+        _ = try await storageRef.putDataAsync(imageData, metadata: metadata)
+        let downloadUrl = try await storageRef.downloadURL()
+        
+        // Create photo document
+        let photo = EventPhoto(
+            uploaderId: userId,
+            uploaderName: userName,
+            imageUrl: downloadUrl.absoluteString,
+            caption: caption
+        )
+        
+        let docRef = try db.collection("events").document(eventId)
+            .collection("photos").addDocument(from: photo)
+        
+        var savedPhoto = photo
+        savedPhoto.id = docRef.documentID
+        return savedPhoto
+    }
+    
+    /// Get all photos for an event
+    func getEventPhotos(eventId: String) async throws -> [EventPhoto] {
+        let snapshot = try await db.collection("events").document(eventId)
+            .collection("photos")
+            .order(by: "timestamp", descending: false)
+            .getDocuments()
+        
+        return snapshot.documents.compactMap { try? $0.data(as: EventPhoto.self) }
+    }
+    
+    /// Delete a photo from an event
+    func deleteEventPhoto(eventId: String, photo: EventPhoto) async throws {
+        guard let photoId = photo.id else { return }
+        
+        // Delete from storage
+        if !photo.imageUrl.isEmpty {
+            try? await Storage.storage().reference(forURL: photo.imageUrl).delete()
+        }
+        
+        // Delete document
+        try await db.collection("events").document(eventId)
+            .collection("photos").document(photoId).delete()
     }
 }
 

@@ -70,6 +70,15 @@ struct EventDetailView: View {
                     
                     Divider()
                     
+                    // Photos Section
+                    EventPhotosSection(
+                        event: event,
+                        currentUserId: authService.currentUserId ?? "",
+                        currentUserName: authService.currentUser?.fullName
+                    )
+                    
+                    Divider()
+                    
                     // Comments Section
                     commentsSection
                 }
