@@ -1,133 +1,165 @@
-# Task: Push Notifications (Post-MVP)
+# Task: Push Notifications
 
-## Description
-Implement remote push notifications using Firebase Cloud Messaging (FCM) to notify users even when the app is closed.
+## Agent Summary
+| Aspect | Details |
+|--------|---------|
+| **Can agent do alone?** | ❌ No - requires Apple Developer account & Firebase Console |
+| **Human tasks** | Create APNs key, upload to Firebase, deploy Cloud Functions |
+| **Agent tasks** | Write AppDelegate code, Cloud Function code, update User model |
+| **Estimated complexity** | High |
+| **Dependencies** | Real Authentication (00-authentication.md) |
 
-## Prerequisites
-- Real authentication implemented
-- Apple Developer account with push certificates
+## What Needs to Happen
 
-## Features
+### Human Must Do (Seth)
+1. Apple Developer Portal:
+   - Create APNs Authentication Key (Keys → + → Apple Push Notifications service)
+   - Download the .p8 file
+2. Firebase Console:
+   - Project Settings → Cloud Messaging → Upload APNs key
+3. Deploy Cloud Functions:
+   - `cd functions && npm install && firebase deploy --only functions`
+4. Enable Cloud Functions in Firebase (may require Blaze plan)
 
-1. **New Event Notifications**: When someone creates an event in your group
-2. **Comment Notifications**: When someone comments on your event
-3. **Reminder Notifications**: Event reminders (1 hour before, etc.)
-4. **Group Invites**: When invited to join a group
+### Agent Can Do
+1. Update `dispoApp.swift` with AppDelegate for push registration
+2. Create notification handling code
+3. Write Cloud Functions for sending notifications
+4. Update User model to store FCM token
+5. Update Firestore writes to trigger notifications
 
-## Implementation Overview
+## Implementation
 
-### 1. Apple Push Configuration
-1. Create APNs key in Apple Developer portal
-2. Upload to Firebase Console → Project Settings → Cloud Messaging
-
-### 2. Add FCM to Project
-Add `FirebaseMessaging` to Swift Package dependencies.
-
-### 3. Register for Notifications
+### 1. Update dispoApp.swift
 ```swift
-import UserNotifications
 import FirebaseMessaging
+import UserNotifications
 
 class AppDelegate: NSObject, UIApplicationDelegate {
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        FirebaseApp.configure()
-        
+    func application(_ application: UIApplication, 
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         UNUserNotificationCenter.current().delegate = self
         
         let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
         UNUserNotificationCenter.current().requestAuthorization(options: authOptions) { _, _ in }
         
         application.registerForRemoteNotifications()
-        
         Messaging.messaging().delegate = self
         
         return true
     }
+    
+    func application(_ application: UIApplication, 
+                     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        Messaging.messaging().apnsToken = deviceToken
+    }
 }
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
-    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
         return [[.banner, .sound]]
+    }
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse) async {
+        let userInfo = response.notification.request.content.userInfo
+        // Handle notification tap - navigate to relevant screen
     }
 }
 
 extension AppDelegate: MessagingDelegate {
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        // Save token to user document for targeting
         guard let token = fcmToken else { return }
-        // Store in Firestore: users/{userId}/fcmToken
+        Task {
+            try? await saveFCMToken(token)
+        }
     }
 }
 ```
 
-### 4. Store FCM Token
-```swift
-func saveFCMToken(_ token: String, for userId: String) async throws {
-    try await db.collection("users").document(userId).updateData([
-        "fcmToken": token
-    ])
-}
-```
-
-### 5. Cloud Function for Sending
-Create Firebase Cloud Function to send notifications:
-
+### 2. Create functions/index.js
 ```javascript
-// functions/index.js
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
 
-exports.sendEventNotification = functions.firestore
-  .document('events/{eventId}')
-  .onCreate(async (snap, context) => {
-    const event = snap.data();
-    
-    if (event.visibility !== 'group') return;
-    
-    const groupDoc = await admin.firestore()
-      .collection('groups')
-      .doc(event.groupId)
-      .get();
-    
-    const members = groupDoc.data().members;
-    
-    // Get FCM tokens for members (except creator)
-    const userDocs = await admin.firestore()
-      .collection('users')
-      .where(admin.firestore.FieldPath.documentId(), 'in', members)
-      .get();
-    
-    const tokens = userDocs.docs
-      .filter(doc => doc.id !== event.creatorId && doc.data().fcmToken)
-      .map(doc => doc.data().fcmToken);
-    
-    if (tokens.length === 0) return;
-    
-    await admin.messaging().sendEachForMulticast({
-      tokens,
-      notification: {
-        title: 'New Event',
-        body: `New event in ${groupDoc.data().name}: ${event.title}`
-      },
-      data: {
-        type: 'new_event',
-        eventId: context.params.eventId
-      }
+// Notify group members when new event created
+exports.onEventCreated = functions.firestore
+    .document('events/{eventId}')
+    .onCreate(async (snap, context) => {
+        const event = snap.data();
+        if (event.visibility !== 'group' || !event.groupId) return;
+        
+        const groupDoc = await admin.firestore()
+            .collection('groups').doc(event.groupId).get();
+        const members = groupDoc.data()?.members || [];
+        
+        const tokens = await getTokensForUsers(
+            members.filter(id => id !== event.creatorId)
+        );
+        
+        if (tokens.length === 0) return;
+        
+        await admin.messaging().sendEachForMulticast({
+            tokens,
+            notification: {
+                title: 'New Event',
+                body: `${event.title} in ${groupDoc.data()?.name}`
+            },
+            data: { type: 'new_event', eventId: context.params.eventId }
+        });
     });
-  });
+
+// Notify event creator when someone comments
+exports.onCommentCreated = functions.firestore
+    .document('events/{eventId}/comments/{commentId}')
+    .onCreate(async (snap, context) => {
+        const comment = snap.data();
+        const eventDoc = await admin.firestore()
+            .collection('events').doc(context.params.eventId).get();
+        const event = eventDoc.data();
+        
+        if (comment.authorId === event.creatorId) return;
+        
+        const tokens = await getTokensForUsers([event.creatorId]);
+        if (tokens.length === 0) return;
+        
+        await admin.messaging().sendEachForMulticast({
+            tokens,
+            notification: {
+                title: 'New Comment',
+                body: `Someone commented on ${event.title}`
+            },
+            data: { type: 'comment', eventId: context.params.eventId }
+        });
+    });
+
+async function getTokensForUsers(userIds) {
+    if (userIds.length === 0) return [];
+    const userDocs = await admin.firestore()
+        .collection('users')
+        .where(admin.firestore.FieldPath.documentId(), 'in', userIds.slice(0, 10))
+        .get();
+    return userDocs.docs
+        .map(doc => doc.data().fcmToken)
+        .filter(token => token);
+}
 ```
+
+### 3. Update User model
+Add `fcmToken: String?` field and save on token refresh.
 
 ## Acceptance Criteria
 - [ ] Permission request shown on first launch
 - [ ] FCM token saved to user document
 - [ ] Push received when app is backgrounded
+- [ ] Notification for new group events
+- [ ] Notification for comments on your events
 - [ ] Tapping notification opens relevant screen
-- [ ] Notifications work for new events
-- [ ] Notifications work for comments
 
 ## Notes
-- Requires Apple Developer paid account
+- Requires Apple Developer paid account ($99/year)
 - FCM tokens can change - handle refresh
-- Consider notification preferences/settings
-- Rate limit notifications to avoid spam
+- Cloud Functions require Firebase Blaze plan (pay-as-you-go)
+- Test with real device (Simulator doesn't support push)

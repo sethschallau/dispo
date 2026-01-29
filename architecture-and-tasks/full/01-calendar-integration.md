@@ -1,51 +1,60 @@
-# Task: Calendar Integration (Post-MVP)
+# Task: Calendar Integration
 
-## Description
-Integrate with device calendar (EventKit) and optionally Google Calendar to sync events.
+## Agent Summary
+| Aspect | Details |
+|--------|---------|
+| **Can agent do alone?** | ⚠️ Partial - code yes, but needs Info.plist edit in Xcode |
+| **Human tasks** | Add calendar permission strings to Info.plist via Xcode |
+| **Agent tasks** | Create CalendarService, add UI buttons, integrate with events |
+| **Estimated complexity** | Medium |
+| **Dependencies** | MVP complete |
 
-## Prerequisites
-- MVP complete
-- Real authentication implemented
+## What Needs to Happen
 
-## Features
+### Human Must Do (Seth)
+1. Add to Info.plist via Xcode:
+   - `NSCalendarsUsageDescription` = "Dispo needs calendar access to sync events and check your availability."
+   - `NSCalendarsFullAccessUsageDescription` = "Dispo needs full calendar access to add events and check availability."
 
-### Device Calendar (EventKit)
-1. Add events to iOS Calendar
-2. Check availability against calendar
-3. Request calendar permissions
+### Agent Can Do
+1. Create `CalendarService.swift` using EventKit
+2. Add "Add to Calendar" button on EventDetailView
+3. Show availability conflicts when creating events (optional)
+4. Handle permission request flow
 
-### Google Calendar API
-1. OAuth authentication
-2. Fetch user's calendar events
-3. Create events in Google Calendar
-4. Show availability from Google Calendar
+## Implementation
 
-## Implementation Overview
-
-### 1. EventKit Integration
+### 1. Create Services/CalendarService.swift
 ```swift
 import EventKit
 
-class CalendarService {
-    let eventStore = EKEventStore()
+class CalendarService: ObservableObject {
+    private let eventStore = EKEventStore()
+    @Published var hasAccess = false
     
     func requestAccess() async -> Bool {
         do {
-            return try await eventStore.requestFullAccessToEvents()
+            let granted = try await eventStore.requestFullAccessToEvents()
+            await MainActor.run { hasAccess = granted }
+            return granted
         } catch {
+            print("Calendar access error: \(error)")
             return false
         }
     }
     
-    func addToCalendar(event: Event) throws {
+    func addToCalendar(event: Event) throws -> String {
+        guard hasAccess else { throw CalendarError.noAccess }
+        
         let ekEvent = EKEvent(eventStore: eventStore)
         ekEvent.title = event.title
         ekEvent.startDate = event.eventDate
-        ekEvent.endDate = event.eventDate.addingTimeInterval(3600) // 1 hour
+        ekEvent.endDate = event.eventDate.addingTimeInterval(3600) // 1 hour default
         ekEvent.notes = event.description
         ekEvent.calendar = eventStore.defaultCalendarForNewEvents
         
         try eventStore.save(ekEvent, span: .thisEvent)
+        return ekEvent.eventIdentifier
     }
     
     func checkAvailability(for date: Date) -> [EKEvent] {
@@ -59,30 +68,30 @@ class CalendarService {
         )
         return eventStore.events(matching: predicate)
     }
+    
+    enum CalendarError: Error {
+        case noAccess
+    }
 }
 ```
 
-### 2. Info.plist Entries
-```xml
-<key>NSCalendarsUsageDescription</key>
-<string>Dispo needs calendar access to sync events and check your availability.</string>
-<key>NSCalendarsFullAccessUsageDescription</key>
-<string>Dispo needs full calendar access to add events and check availability.</string>
-```
+### 2. Update EventDetailView
+- Add "Add to Calendar" button
+- Show success/failure feedback
+- Track if already added (store ekEventIdentifier in UserDefaults or local state)
 
-### 3. Google Calendar API
-- Set up OAuth 2.0 credentials
-- Use Google Sign-In SDK
-- Make API calls to Google Calendar API
+### 3. Optional: Availability in CreateEventView
+- When selecting date, show existing calendar events
+- Visual indicator of busy times
 
 ## Acceptance Criteria
-- [ ] Request and handle calendar permissions
+- [ ] Calendar permission requested on first use
 - [ ] "Add to Calendar" button on event detail
-- [ ] Events added to device calendar
-- [ ] Availability shown when creating events
-- [ ] (Optional) Google Calendar sync works
+- [ ] Events successfully added to iOS Calendar
+- [ ] Handles permission denied gracefully
+- [ ] (Optional) Shows availability when creating events
 
 ## Notes
-- EventKit requires iOS permission request
-- Google Calendar requires separate OAuth flow
-- Consider showing busy times without revealing event details
+- EventKit requires iOS permission - can't test in Simulator without granting
+- Google Calendar integration is separate (requires OAuth) - skip for now
+- Consider storing calendar event ID to prevent duplicates

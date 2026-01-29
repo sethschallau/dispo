@@ -1,39 +1,35 @@
-# Task: Real Authentication (Post-MVP)
+# Task: Real Authentication
 
-## Description
-Replace the fake login with Firebase Authentication using phone number verification.
+## Agent Summary
+| Aspect | Details |
+|--------|---------|
+| **Can agent do alone?** | ❌ No - requires Apple Developer & Firebase Console setup |
+| **Human tasks** | Enable Phone Auth in Firebase Console, configure APNs if needed |
+| **Agent tasks** | Update AuthService, LoginView, security rules |
+| **Estimated complexity** | Medium |
+| **Dependencies** | MVP complete |
 
-## Prerequisites
-- MVP complete and tested
-- Firebase Auth enabled in console
+## What Needs to Happen
 
-## Implementation Overview
+### Human Must Do (Seth)
+1. Firebase Console → Authentication → Sign-in method → Enable "Phone"
+2. Add test phone numbers for development (optional but helpful)
+3. If using real devices: configure APNs certificate in Firebase
 
-### 1. Enable Phone Auth in Firebase
-1. Firebase Console → Authentication → Sign-in method
-2. Enable "Phone"
-3. Add test phone numbers for development
+### Agent Can Do
+1. Update `AuthService.swift` to use `FirebaseAuth`
+2. Update `LoginView.swift` for verification code flow
+3. Update `firestore.rules` to use `request.auth.uid`
+4. Update `storage.rules` for authenticated access
+5. Migration logic for existing fake-auth users (if needed)
 
-### 2. Update AuthService
-- Replace fake login with Firebase Auth
-- Use `PhoneAuthProvider` for verification
-- Link anonymous accounts if used
+## Implementation
 
-### 3. Update Security Rules
-- Change `if true` to `if request.auth != null`
-- Use `request.auth.uid` for ownership checks
-
-### 4. Migration Path
-If users have existing data:
-- Keep same userId (phone number)
-- Or implement account linking
-
-## Key Code Changes
-
+### 1. Update AuthService.swift
 ```swift
-// AuthService additions
 import FirebaseAuth
 
+// Add to AuthService:
 func sendVerificationCode(to phone: String) async throws -> String {
     let verificationID = try await PhoneAuthProvider.provider().verifyPhoneNumber(
         phone,
@@ -42,24 +38,59 @@ func sendVerificationCode(to phone: String) async throws -> String {
     return verificationID
 }
 
-func verifyCode(_ code: String, verificationID: String) async throws {
+func verifyCode(_ code: String, verificationID: String) async throws -> User {
     let credential = PhoneAuthProvider.provider().credential(
         withVerificationID: verificationID,
         verificationCode: code
     )
     let result = try await Auth.auth().signIn(with: credential)
-    // Create/update user document
+    // Create/update user document using result.user.uid
+    return user
+}
+
+func signOut() throws {
+    try Auth.auth().signOut()
+    // Clear local state
+}
+```
+
+### 2. Update LoginView.swift
+- Add two-step flow: phone entry → code verification
+- Show loading state during verification
+- Handle errors (invalid code, too many attempts)
+
+### 3. Update Security Rules
+```javascript
+// firestore.rules - replace permissive rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == userId;
+    }
+    match /groups/{groupId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    match /events/{eventId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    // ... similar for subcollections
+  }
 }
 ```
 
 ## Acceptance Criteria
-- [ ] Phone verification SMS sent
+- [ ] Phone verification SMS sent (or test number works)
 - [ ] Code entry and verification works
 - [ ] User authenticated with Firebase Auth
 - [ ] Security rules enforce authentication
-- [ ] Existing users can still access their data
+- [ ] Existing app flows work with real auth
+- [ ] Logout clears Firebase Auth session
 
 ## Notes
-- Requires Apple Push certificate for iOS
-- Test phone numbers bypass actual SMS in dev
-- Consider account linking for anonymous → phone upgrade
+- Test phone numbers bypass SMS in development
+- Consider graceful migration from fake-auth user IDs
+- Rate limiting is built into Firebase Phone Auth
