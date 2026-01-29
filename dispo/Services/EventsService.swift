@@ -151,5 +151,74 @@ class EventsService: ObservableObject {
             listener.remove()
         }
     }
+    
+    // MARK: - Create Event
+    
+    /// Create a new event
+    func createEvent(_ event: Event) async throws -> String {
+        let docRef = try db.collection("events").addDocument(from: event)
+        return docRef.documentID
+    }
+    
+    // MARK: - Update & Delete
+    
+    /// Update an existing event
+    func updateEvent(_ event: Event) async throws {
+        guard let eventId = event.id else {
+            throw EventError.missingId
+        }
+        try db.collection("events").document(eventId).setData(from: event, merge: true)
+    }
+    
+    /// Delete an event and all its subcollections
+    func deleteEvent(_ eventId: String) async throws {
+        let eventRef = db.collection("events").document(eventId)
+        
+        // Delete comments subcollection
+        let comments = try await eventRef.collection("comments").getDocuments()
+        for doc in comments.documents {
+            try await doc.reference.delete()
+        }
+        
+        // Delete rsvps subcollection (if exists)
+        let rsvps = try await eventRef.collection("rsvps").getDocuments()
+        for doc in rsvps.documents {
+            try await doc.reference.delete()
+        }
+        
+        // Delete photos subcollection (if exists)
+        let photos = try await eventRef.collection("photos").getDocuments()
+        for doc in photos.documents {
+            try await doc.reference.delete()
+        }
+        
+        // Delete event document
+        try await eventRef.delete()
+    }
+    
+    /// Get a single event by ID
+    func getEvent(_ eventId: String) async throws -> Event? {
+        let doc = try await db.collection("events").document(eventId).getDocument()
+        return try? doc.data(as: Event.self)
+    }
+}
+
+// MARK: - Errors
+
+enum EventError: LocalizedError {
+    case missingId
+    case notFound
+    case unauthorized
+    
+    var errorDescription: String? {
+        switch self {
+        case .missingId:
+            return "Event ID is missing"
+        case .notFound:
+            return "Event not found"
+        case .unauthorized:
+            return "You don't have permission to modify this event"
+        }
+    }
 }
 

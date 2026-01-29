@@ -10,8 +10,9 @@ import FirebaseCore
 import Combine
 
 struct EventDetailView: View {
-    let event: Event
+    @State var event: Event
     
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authService: AuthService
     @StateObject private var commentsService = CommentsService()
     
@@ -19,6 +20,9 @@ struct EventDetailView: View {
     @State private var isSubmitting = false
     @State private var showReminderPicker = false
     @State private var reminderSet = false
+    @State private var showEditSheet = false
+    @State private var showDeleteConfirmation = false
+    @State private var isDeleting = false
     
     var body: some View {
         ScrollView {
@@ -53,9 +57,51 @@ struct EventDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { showReminderPicker = true }) {
-                    Image(systemName: reminderSet ? "bell.fill" : "bell")
-                        .foregroundColor(reminderSet ? .orange : .blue)
+                HStack(spacing: 16) {
+                    // Reminder button
+                    Button(action: { showReminderPicker = true }) {
+                        Image(systemName: reminderSet ? "bell.fill" : "bell")
+                            .foregroundColor(reminderSet ? .orange : .blue)
+                    }
+                    
+                    // Edit/Delete menu (only for creator)
+                    if event.creatorId == authService.currentUserId {
+                        Menu {
+                            Button(action: { showEditSheet = true }) {
+                                Label("Edit Event", systemImage: "pencil")
+                            }
+                            Button(role: .destructive, action: { showDeleteConfirmation = true }) {
+                                Label("Delete Event", systemImage: "trash")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                        }
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showEditSheet) {
+            EditEventView(event: event)
+                .onDisappear {
+                    // Refresh event data after edit
+                    refreshEvent()
+                }
+        }
+        .confirmationDialog("Delete Event?", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) { deleteEvent() }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This will permanently delete the event and all comments. This cannot be undone.")
+        }
+        .overlay {
+            if isDeleting {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                VStack {
+                    ProgressView()
+                    Text("Deleting...")
+                        .font(.caption)
+                        .foregroundColor(.white)
                 }
             }
         }
@@ -225,7 +271,42 @@ struct EventDetailView: View {
         .padding(.top, 8)
     }
     
-    // MARK: - Actions
+    // MARK: - Event Actions
+    
+    private func refreshEvent() {
+        guard let eventId = event.id else { return }
+        Task {
+            let service = EventsService()
+            if let updated = try? await service.getEvent(eventId) {
+                await MainActor.run {
+                    event = updated
+                }
+            }
+        }
+    }
+    
+    private func deleteEvent() {
+        guard let eventId = event.id else { return }
+        isDeleting = true
+        
+        Task {
+            do {
+                let service = EventsService()
+                try await service.deleteEvent(eventId)
+                await MainActor.run {
+                    isDeleting = false
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    isDeleting = false
+                    print("Error deleting event: \(error)")
+                }
+            }
+        }
+    }
+    
+    // MARK: - Comment Actions
     
     private func submitComment() {
         guard let eventId = event.id,
