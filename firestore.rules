@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // MVP: Open rules for development
+    // WARNING: Not secure - replace before production
+    
+    // Users collection
+    match /users/{userId} {
+      allow read, write: if true;
+      
+      // User's notifications
+      match /notifications/{notifId} {
+        allow read, write: if true;
+      }
+    }
+    
+    // Groups collection
+    match /groups/{groupId} {
+      allow read, write: if true;
+      
+      // Group members subcollection (optional)
+      match /members/{memberId} {
+        allow read, write: if true;
+      }
+    }
+    
+    // Events collection
+    match /events/{eventId} {
+      allow read, write: if true;
+      
+      // Event comments
+      match /comments/{commentId} {
+        allow read, write: if true;
+      }
+      
+      // Event RSVPs
+      match /rsvps/{rsvpId} {
+        allow read, write: if true;
+      }
+    }
+  }
+}
