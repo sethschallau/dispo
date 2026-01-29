@@ -21,11 +21,18 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 @main
 struct dispoApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @StateObject private var authService = AuthService.shared
 
     var body: some Scene {
         WindowGroup {
-            NavigationView {
-                ContentView()
+            Group {
+                if authService.isLoggedIn {
+                    MainTabView()
+                        .environmentObject(authService)
+                } else {
+                    LoginView()
+                        .environmentObject(authService)
+                }
             }
         }
     }
