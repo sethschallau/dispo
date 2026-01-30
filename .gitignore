@@ -1,6 +1,14 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
+# Secrets
+service-account.json
+GoogleService-Info.plist
+*.plist
+secrets/
+.env
+.env*.local
+
+# Dependencies
 node_modules/
 
 # Expo
