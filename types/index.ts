@@ -1,6 +1,6 @@
 /**
  * Dispo Type Definitions
- * 
+ *
  * TypeScript types matching the Firestore schema.
  * Ported from Swift models in archive/swift-ios/dispo/Models/
  */
@@ -60,9 +60,9 @@ export type EventVisibility = 'public' | 'group' | 'private' | 'friends';
 
 export const EventVisibilityConfig: Record<EventVisibility, { displayName: string; icon: string }> = {
   public: { displayName: 'Public', icon: 'globe' },
-  group: { displayName: 'Group', icon: 'people' },
-  private: { displayName: 'Private', icon: 'lock-closed' },
-  friends: { displayName: 'Friends', icon: 'people-outline' },
+  group: { displayName: 'Group', icon: 'users' },
+  private: { displayName: 'Private', icon: 'lock' },
+  friends: { displayName: 'Friends', icon: 'user' },
 };
 
 // ============================================
@@ -90,9 +90,9 @@ export interface RSVP {
 export type RSVPStatus = 'going' | 'maybe' | 'declined';
 
 export const RSVPStatusConfig: Record<RSVPStatus, { displayName: string; icon: string; color: string }> = {
-  going: { displayName: 'Going', icon: 'checkmark-circle', color: '#22c55e' },
-  maybe: { displayName: 'Maybe', icon: 'help-circle', color: '#f97316' },
-  declined: { displayName: "Can't Go", icon: 'close-circle', color: '#ef4444' },
+  going: { displayName: 'Going', icon: 'check-circle', color: '#22c55e' },
+  maybe: { displayName: 'Maybe', icon: 'question-circle', color: '#f97316' },
+  declined: { displayName: "Can't Go", icon: 'times-circle', color: '#ef4444' },
 };
 
 // ============================================
@@ -121,7 +121,7 @@ export interface AppNotification {
   fromUserId?: string;
 }
 
-export type NotificationType = 
+export type NotificationType =
   | 'new_event'
   | 'new_comment'
   | 'comment_reply'

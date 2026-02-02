@@ -1,20 +1,20 @@
 /**
  * Auth Context and Hook
- * 
+ *
  * Provides authentication state management across the app.
  * Ported from Swift: archive/swift-ios/dispo/Services/AuthService.swift (@MainActor pattern)
  */
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  ReactNode,
-} from 'react';
 import { authService } from '@/services/auth';
 import { User } from '@/types';
+import React, {
+    createContext,
+    ReactNode,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
+} from 'react';
 
 interface AuthContextType {
   /** Current user object (null if not logged in) */
@@ -92,9 +92,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Log out and clear session
    */
   const logout = useCallback(async () => {
-    await authService.logout();
-    setUser(null);
-    setUserId(null);
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      setUser(null);
+      setUserId(null);
+    }
   }, []);
 
   /**
