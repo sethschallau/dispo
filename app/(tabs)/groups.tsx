@@ -1,23 +1,27 @@
 /**
  * Groups Screen
  *
- * Shows user's groups with options to create or join.
+ * Industrial ethereal aesthetic
  */
 
 import GroupCard from '@/components/GroupCard';
-import { Text, View } from '@/components/Themed';
+import Theme from '@/constants/Theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useGroups } from '@/hooks/useGroups';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
     FlatList,
     Modal,
+    Platform,
     StyleSheet,
+    Text,
     TextInput,
     TouchableOpacity,
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -74,7 +78,7 @@ export default function GroupsScreen() {
   if (isLoading && groups.length === 0) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={Theme.colors.accent} />
       </View>
     );
   }
@@ -83,21 +87,31 @@ export default function GroupsScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Groups</Text>
+        <View>
+          <Text style={styles.title}>Groups</Text>
+          <View style={styles.titleAccent} />
+        </View>
         <View style={styles.headerButtons}>
           <TouchableOpacity
             style={styles.headerButton}
             onPress={() => setShowJoinModal(true)}
           >
-            <FontAwesome name="sign-in" size={18} color="#007AFF" />
+            <FontAwesome name="sign-in" size={16} color={Theme.colors.accent} />
             <Text style={styles.headerButtonText}>Join</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.headerButton, styles.createButton]}
+            style={styles.createButton}
             onPress={() => setShowCreateModal(true)}
           >
-            <FontAwesome name="plus" size={16} color="#fff" />
-            <Text style={styles.createButtonText}>Create</Text>
+            <LinearGradient
+              colors={[Theme.colors.accent, Theme.colors.accentMuted]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.createButtonGradient}
+            >
+              <FontAwesome name="plus" size={14} color="#fff" />
+              <Text style={styles.createButtonText}>Create</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </View>
@@ -110,9 +124,12 @@ export default function GroupsScreen() {
         )}
         keyExtractor={(item) => item.id!}
         contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <FontAwesome name="users" size={48} color="#ccc" />
+            <View style={styles.emptyIconWrapper}>
+              <FontAwesome name="users" size={36} color={Theme.colors.chromeDim} />
+            </View>
             <Text style={styles.emptyTitle}>No groups yet</Text>
             <Text style={styles.emptyText}>
               Create a group or join one with a code
@@ -142,7 +159,7 @@ export default function GroupsScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Enter group name"
-                placeholderTextColor="#999"
+                placeholderTextColor={Theme.colors.textMuted}
                 value={groupName}
                 onChangeText={setGroupName}
                 maxLength={50}
@@ -154,7 +171,7 @@ export default function GroupsScreen() {
               <TextInput
                 style={[styles.input, styles.textArea]}
                 placeholder="What's this group about?"
-                placeholderTextColor="#999"
+                placeholderTextColor={Theme.colors.textMuted}
                 value={groupDescription}
                 onChangeText={setGroupDescription}
                 multiline
@@ -167,11 +184,18 @@ export default function GroupsScreen() {
               onPress={handleCreate}
               disabled={isSubmitting}
             >
-              {isSubmitting ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.submitButtonText}>Create Group</Text>
-              )}
+              <LinearGradient
+                colors={[Theme.colors.accent, Theme.colors.accentMuted]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.submitButtonGradient}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Create Group</Text>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
@@ -197,8 +221,8 @@ export default function GroupsScreen() {
               <Text style={styles.label}>Join Code</Text>
               <TextInput
                 style={[styles.input, styles.codeInput]}
-                placeholder="Enter 6-character code"
-                placeholderTextColor="#999"
+                placeholder="XXXXXX"
+                placeholderTextColor={Theme.colors.textMuted}
                 value={joinCode}
                 onChangeText={setJoinCode}
                 autoCapitalize="characters"
@@ -211,11 +235,18 @@ export default function GroupsScreen() {
               onPress={handleJoin}
               disabled={isSubmitting}
             >
-              {isSubmitting ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.submitButtonText}>Join Group</Text>
-              )}
+              <LinearGradient
+                colors={[Theme.colors.accent, Theme.colors.accentMuted]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.submitButtonGradient}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Join Group</Text>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
@@ -227,52 +258,86 @@ export default function GroupsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Theme.colors.background,
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: Theme.colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 8,
+    paddingBottom: 12,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: Theme.colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  titleAccent: {
+    width: 40,
+    height: 3,
+    backgroundColor: Theme.colors.accent,
+    borderRadius: 2,
+    marginTop: 8,
+    opacity: 0.6,
   },
   headerButtons: {
     flexDirection: 'row',
     gap: 10,
+    marginTop: 4,
   },
   headerButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: Theme.radius.md,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: Theme.colors.border,
+    backgroundColor: Theme.colors.backgroundCard,
   },
   headerButtonText: {
-    color: '#007AFF',
+    color: Theme.colors.accent,
     fontWeight: '600',
+    fontSize: 14,
   },
   createButton: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    borderRadius: Theme.radius.md,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: Theme.colors.accent,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  createButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   createButtonText: {
     color: '#fff',
     fontWeight: '600',
+    fontSize: 14,
   },
   list: {
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   emptyState: {
     flex: 1,
@@ -281,35 +346,48 @@ const styles = StyleSheet.create({
     paddingTop: 100,
     paddingHorizontal: 40,
   },
+  emptyIconWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Theme.colors.backgroundCard,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+  },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    marginTop: 16,
+    color: Theme.colors.textPrimary,
+    marginTop: 20,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
+    color: Theme.colors.textMuted,
     textAlign: 'center',
     marginTop: 8,
   },
   modalContainer: {
     flex: 1,
+    backgroundColor: Theme.colors.background,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ddd',
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.border,
   },
   cancelText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: Theme.colors.accent,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
+    color: Theme.colors.textPrimary,
   },
   modalContent: {
     padding: 20,
@@ -321,16 +399,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 8,
-    color: '#333',
+    color: Theme.colors.textSecondary,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 12,
+    borderColor: Theme.colors.border,
+    borderRadius: Theme.radius.md,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Theme.colors.backgroundCard,
+    color: Theme.colors.textPrimary,
   },
   textArea: {
     minHeight: 80,
@@ -339,22 +418,35 @@ const styles = StyleSheet.create({
   codeInput: {
     textAlign: 'center',
     fontSize: 24,
-    letterSpacing: 4,
+    letterSpacing: 6,
     fontWeight: '600',
   },
   submitButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
+    borderRadius: Theme.radius.md,
+    overflow: 'hidden',
     marginTop: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: Theme.colors.accent,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.35,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   submitButtonDisabled: {
     opacity: 0.6,
   },
+  submitButtonGradient: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
   submitButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
   },
 });

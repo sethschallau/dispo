@@ -1,24 +1,28 @@
 /**
  * Profile Screen
  *
- * Shows user profile with their groups and events.
+ * Industrial ethereal aesthetic
  */
 
-import { Text, View } from '@/components/Themed';
+import Theme from '@/constants/Theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useEvents, useUserGoingEvents } from '@/hooks/useEvents';
 import { useGroups } from '@/hooks/useGroups';
 import { formatEventDate } from '@/types';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
     Modal,
+    Platform,
     ScrollView,
     StyleSheet,
+    Text,
     TextInput,
     TouchableOpacity,
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -88,7 +92,7 @@ export default function ProfileScreen() {
   if (authLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={Theme.colors.accent} />
       </View>
     );
   }
@@ -97,11 +101,19 @@ export default function ProfileScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingTop: insets.top }}
+      showsVerticalScrollIndicator={false}
     >
       {/* Profile Header */}
       <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initial}</Text>
+        <View style={styles.avatarWrapper}>
+          <LinearGradient
+            colors={[Theme.colors.accent, Theme.colors.accentMuted]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.avatar}
+          >
+            <Text style={styles.avatarText}>{initial}</Text>
+          </LinearGradient>
         </View>
         <Text style={styles.name}>{user?.fullName}</Text>
         <Text style={styles.username}>@{user?.username}</Text>
@@ -115,7 +127,7 @@ export default function ProfileScreen() {
             setShowEditModal(true);
           }}
         >
-          <FontAwesome name="pencil" size={14} color="#007AFF" />
+          <FontAwesome name="pencil" size={13} color={Theme.colors.accent} />
           <Text style={styles.editButtonText}>Edit Profile</Text>
         </TouchableOpacity>
       </View>
@@ -133,7 +145,7 @@ export default function ProfileScreen() {
               onPress={() => router.push(`/group/${group.id}`)}
             >
               <View style={styles.groupIcon}>
-                <FontAwesome name="users" size={16} color="#007AFF" />
+                <FontAwesome name="users" size={14} color={Theme.colors.accent} />
               </View>
               <View style={styles.listItemContent}>
                 <Text style={styles.listItemTitle}>{group.name}</Text>
@@ -141,7 +153,7 @@ export default function ProfileScreen() {
                   {group.members?.length || 0} members
                 </Text>
               </View>
-              <FontAwesome name="chevron-right" size={14} color="#ccc" />
+              <FontAwesome name="chevron-right" size={12} color={Theme.colors.chromeDim} />
             </TouchableOpacity>
           ))
         )}
@@ -162,7 +174,7 @@ export default function ProfileScreen() {
               onPress={() => router.push(`/event/${event.id}`)}
             >
               <View style={styles.eventIcon}>
-                <FontAwesome name="calendar" size={16} color="#10b981" />
+                <FontAwesome name="calendar" size={14} color={Theme.colors.success} />
               </View>
               <View style={styles.listItemContent}>
                 <Text style={styles.listItemTitle}>{event.title}</Text>
@@ -170,7 +182,7 @@ export default function ProfileScreen() {
                   {formatEventDate(event.eventDate)}
                 </Text>
               </View>
-              <FontAwesome name="chevron-right" size={14} color="#ccc" />
+              <FontAwesome name="chevron-right" size={12} color={Theme.colors.chromeDim} />
             </TouchableOpacity>
           ))
         )}
@@ -191,7 +203,7 @@ export default function ProfileScreen() {
               onPress={() => router.push(`/event/${event.id}`)}
             >
               <View style={styles.goingIcon}>
-                <FontAwesome name="check-circle" size={16} color="#007AFF" />
+                <FontAwesome name="check-circle" size={14} color={Theme.colors.accent} />
               </View>
               <View style={styles.listItemContent}>
                 <Text style={styles.listItemTitle}>{event.title}</Text>
@@ -199,7 +211,7 @@ export default function ProfileScreen() {
                   {formatEventDate(event.eventDate)}
                 </Text>
               </View>
-              <FontAwesome name="chevron-right" size={14} color="#ccc" />
+              <FontAwesome name="chevron-right" size={12} color={Theme.colors.chromeDim} />
             </TouchableOpacity>
           ))
         )}
@@ -208,12 +220,12 @@ export default function ProfileScreen() {
       {/* Logout */}
       <View style={styles.section}>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <FontAwesome name="sign-out" size={18} color="#ef4444" />
+          <FontAwesome name="sign-out" size={16} color={Theme.colors.error} />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={{ height: 100 }} />
+      <View style={{ height: 120 }} />
 
       {/* Edit Profile Modal */}
       <Modal
@@ -236,7 +248,7 @@ export default function ProfileScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Your name"
-                placeholderTextColor="#999"
+                placeholderTextColor={Theme.colors.textMuted}
                 value={editName}
                 onChangeText={setEditName}
                 maxLength={50}
@@ -248,7 +260,7 @@ export default function ProfileScreen() {
               <TextInput
                 style={[styles.input, styles.textArea]}
                 placeholder="Tell us about yourself"
-                placeholderTextColor="#999"
+                placeholderTextColor={Theme.colors.textMuted}
                 value={editBio}
                 onChangeText={setEditBio}
                 multiline
@@ -261,11 +273,18 @@ export default function ProfileScreen() {
               onPress={handleSaveProfile}
               disabled={isSubmitting}
             >
-              {isSubmitting ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              )}
+              <LinearGradient
+                colors={[Theme.colors.accent, Theme.colors.accentMuted]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.saveButtonGradient}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
@@ -277,28 +296,39 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Theme.colors.background,
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: Theme.colors.background,
   },
   header: {
     alignItems: 'center',
-    paddingTop: 16,
-    paddingBottom: 24,
+    paddingTop: 20,
+    paddingBottom: 28,
     paddingHorizontal: 20,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ddd',
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.border,
+  },
+  avatarWrapper: {
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: Theme.colors.accent,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+      },
+    }),
   },
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
   },
   avatarText: {
     color: '#fff',
@@ -306,47 +336,53 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   name: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 26,
+    fontWeight: '700',
+    color: Theme.colors.textPrimary,
+    letterSpacing: -0.5,
   },
   username: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 15,
+    color: Theme.colors.textMuted,
     marginTop: 4,
   },
   bio: {
     fontSize: 14,
-    color: '#444',
+    color: Theme.colors.textSecondary,
     textAlign: 'center',
     marginTop: 12,
     paddingHorizontal: 20,
+    lineHeight: 20,
   },
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     marginTop: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: Theme.radius.full,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: Theme.colors.border,
+    backgroundColor: Theme.colors.backgroundCard,
   },
   editButtonText: {
-    color: '#007AFF',
+    color: Theme.colors.accent,
     fontWeight: '600',
+    fontSize: 14,
   },
   section: {
     paddingHorizontal: 20,
     paddingTop: 24,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: 14,
+    color: Theme.colors.textPrimary,
   },
   emptyText: {
-    color: '#999',
+    color: Theme.colors.textMuted,
     fontSize: 14,
     fontStyle: 'italic',
   },
@@ -354,14 +390,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.border,
   },
   groupIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#e0f2fe',
+    backgroundColor: Theme.colors.accent + '15',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -369,7 +405,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#d1fae5',
+    backgroundColor: Theme.colors.success + '15',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -377,7 +413,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#dbeafe',
+    backgroundColor: Theme.colors.accent + '15',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -386,12 +422,13 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   listItemTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
+    color: Theme.colors.textPrimary,
   },
   listItemSubtitle: {
     fontSize: 13,
-    color: '#666',
+    color: Theme.colors.textMuted,
     marginTop: 2,
   },
   logoutButton: {
@@ -400,33 +437,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: Theme.radius.md,
     borderWidth: 1,
-    borderColor: '#ef4444',
+    borderColor: Theme.colors.error + '40',
+    backgroundColor: Theme.colors.error + '10',
   },
   logoutText: {
-    color: '#ef4444',
-    fontSize: 16,
+    color: Theme.colors.error,
+    fontSize: 15,
     fontWeight: '600',
   },
   modalContainer: {
     flex: 1,
+    backgroundColor: Theme.colors.background,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ddd',
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.border,
   },
   cancelText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: Theme.colors.accent,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
+    color: Theme.colors.textPrimary,
   },
   modalContent: {
     padding: 20,
@@ -438,34 +478,48 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 8,
-    color: '#333',
+    color: Theme.colors.textSecondary,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 12,
+    borderColor: Theme.colors.border,
+    borderRadius: Theme.radius.md,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Theme.colors.backgroundCard,
+    color: Theme.colors.textPrimary,
   },
   textArea: {
     minHeight: 80,
     textAlignVertical: 'top',
   },
   saveButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
+    borderRadius: Theme.radius.md,
+    overflow: 'hidden',
     marginTop: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: Theme.colors.accent,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.35,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   saveButtonDisabled: {
     opacity: 0.6,
   },
+  saveButtonGradient: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
   saveButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
   },
 });

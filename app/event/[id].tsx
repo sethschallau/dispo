@@ -1,18 +1,19 @@
 /**
  * Event Detail Screen
  *
- * Shows full event details, RSVPs, and comments.
+ * Industrial ethereal aesthetic
  */
 
 import CommentList from '@/components/CommentList';
 import RSVPButtons from '@/components/RSVPButtons';
-import { Text, View } from '@/components/Themed';
+import Theme from '@/constants/Theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useComments } from '@/hooks/useComments';
 import { useEvent, useEventRSVPs } from '@/hooks/useEvents';
 import { eventsService } from '@/services/events';
 import { EventVisibilityConfig, formatEventDate } from '@/types';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import {
@@ -22,7 +23,9 @@ import {
     ScrollView,
     Share,
     StyleSheet,
+    Text,
     TouchableOpacity,
+    View
 } from 'react-native';
 
 export default function EventDetailScreen() {
@@ -88,7 +91,7 @@ export default function EventDetailScreen() {
   if (eventLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={Theme.colors.accent} />
       </View>
     );
   }
@@ -96,7 +99,7 @@ export default function EventDetailScreen() {
   if (!event) {
     return (
       <View style={styles.centered}>
-        <FontAwesome name="calendar-times-o" size={48} color="#ccc" />
+        <FontAwesome name="calendar-times-o" size={48} color={Theme.colors.chromeDim} />
         <Text style={styles.notFoundText}>Event not found</Text>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.backLink}>Go back</Text>
@@ -114,27 +117,34 @@ export default function EventDetailScreen() {
           headerShown: true,
           title: '',
           headerBackTitle: 'Back',
+          headerStyle: { backgroundColor: Theme.colors.background },
+          headerTintColor: Theme.colors.textPrimary,
           headerRight: () => (
             <View style={styles.headerButtons}>
               <TouchableOpacity onPress={handleShare} style={styles.headerButton}>
-                <FontAwesome name="share" size={20} color="#007AFF" />
+                <FontAwesome name="share" size={18} color={Theme.colors.accent} />
               </TouchableOpacity>
               {isCreator && (
                 <TouchableOpacity onPress={handleDelete} style={styles.headerButton}>
-                  <FontAwesome name="trash" size={20} color="#ef4444" />
+                  <FontAwesome name="trash" size={18} color={Theme.colors.error} />
                 </TouchableOpacity>
               )}
             </View>
           ),
         }}
       />
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Image */}
         {event.imageUrl ? (
           <Image source={{ uri: event.imageUrl }} style={styles.image} />
         ) : (
           <View style={styles.imagePlaceholder}>
-            <FontAwesome name="calendar" size={48} color="#ccc" />
+            <LinearGradient
+              colors={[Theme.colors.accent + '15', Theme.colors.backgroundCard]}
+              style={styles.imagePlaceholderGradient}
+            >
+              <FontAwesome name="calendar" size={44} color={Theme.colors.chromeDim} />
+            </LinearGradient>
           </View>
         )}
 
@@ -143,30 +153,36 @@ export default function EventDetailScreen() {
           {/* Title */}
           <Text style={styles.title}>{event.title}</Text>
 
-          {/* Date & Time */}
-          <View style={styles.infoRow}>
-            <FontAwesome name="clock-o" size={16} color="#666" />
-            <Text style={styles.infoText}>{formatEventDate(event.eventDate)}</Text>
-          </View>
-
-          {/* Location */}
-          {event.location && (
+          {/* Info Cards */}
+          <View style={styles.infoCard}>
             <View style={styles.infoRow}>
-              <FontAwesome name="map-marker" size={16} color="#666" />
-              <Text style={styles.infoText}>{event.location}</Text>
+              <View style={styles.infoIcon}>
+                <FontAwesome name="clock-o" size={14} color={Theme.colors.accent} />
+              </View>
+              <Text style={styles.infoText}>{formatEventDate(event.eventDate)}</Text>
             </View>
-          )}
 
-          {/* Visibility */}
-          <View style={styles.infoRow}>
-            <FontAwesome name={visibilityConfig.icon as any} size={16} color="#666" />
-            <Text style={styles.infoText}>{visibilityConfig.displayName}</Text>
+            {event.location && (
+              <View style={styles.infoRow}>
+                <View style={styles.infoIcon}>
+                  <FontAwesome name="map-marker" size={14} color={Theme.colors.accent} />
+                </View>
+                <Text style={styles.infoText}>{event.location}</Text>
+              </View>
+            )}
+
+            <View style={styles.infoRow}>
+              <View style={styles.infoIcon}>
+                <FontAwesome name={visibilityConfig.icon as any} size={14} color={Theme.colors.accent} />
+              </View>
+              <Text style={styles.infoText}>{visibilityConfig.displayName}</Text>
+            </View>
           </View>
 
           {/* Invite Code */}
           {event.inviteCode && (
             <View style={styles.inviteCodeBox}>
-              <Text style={styles.inviteCodeLabel}>Invite Code</Text>
+              <Text style={styles.inviteCodeLabel}>INVITE CODE</Text>
               <Text style={styles.inviteCode}>{event.inviteCode}</Text>
             </View>
           )}
@@ -207,20 +223,22 @@ export default function EventDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Theme.colors.background,
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: Theme.colors.background,
   },
   notFoundText: {
     fontSize: 18,
-    color: '#666',
+    color: Theme.colors.textMuted,
     marginTop: 16,
   },
   backLink: {
     fontSize: 16,
-    color: '#007AFF',
+    color: Theme.colors.accent,
     marginTop: 12,
   },
   headerButtons: {
@@ -232,61 +250,87 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 200,
+    height: 220,
   },
   imagePlaceholder: {
     width: '100%',
-    height: 200,
-    backgroundColor: '#f0f0f0',
+    height: 220,
+    overflow: 'hidden',
+  },
+  imagePlaceholderGradient: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   content: {
-    padding: 16,
+    padding: 20,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 16,
+    fontWeight: '700',
+    color: Theme.colors.textPrimary,
+    letterSpacing: -0.5,
+    marginBottom: 20,
+  },
+  infoCard: {
+    backgroundColor: Theme.colors.backgroundCard,
+    borderRadius: Theme.radius.lg,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    gap: 14,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-    gap: 10,
+    gap: 12,
+  },
+  infoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Theme.colors.accent + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   infoText: {
     fontSize: 15,
-    color: '#444',
+    color: Theme.colors.textSecondary,
+    flex: 1,
   },
   inviteCodeBox: {
-    backgroundColor: '#f0f0f0',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: Theme.colors.backgroundCard,
+    padding: 20,
+    borderRadius: Theme.radius.lg,
     marginTop: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
   },
   inviteCodeLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
+    fontSize: 11,
+    color: Theme.colors.textMuted,
+    letterSpacing: 1,
+    marginBottom: 6,
   },
   inviteCode: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    letterSpacing: 2,
+    fontSize: 28,
+    fontWeight: '700',
+    letterSpacing: 4,
+    color: Theme.colors.accent,
   },
   section: {
     marginTop: 24,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
-    marginBottom: 8,
+    color: Theme.colors.textPrimary,
+    marginBottom: 10,
   },
   description: {
     fontSize: 15,
-    lineHeight: 22,
-    color: '#444',
+    lineHeight: 24,
+    color: Theme.colors.textSecondary,
   },
 });

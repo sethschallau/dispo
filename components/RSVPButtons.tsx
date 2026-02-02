@@ -1,14 +1,14 @@
 /**
  * RSVPButtons Component
  *
- * Displays RSVP options for an event.
+ * Industrial ethereal RSVP buttons
  */
 
+import Theme from '@/constants/Theme';
 import { RSVPStatus, RSVPStatusConfig } from '@/types';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import React from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
-import { Text, View } from './Themed';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface RSVPButtonsProps {
   currentStatus: RSVPStatus | null;
@@ -39,20 +39,30 @@ export default function RSVPButtons({
               key={status}
               style={[
                 styles.button,
-                isSelected && { backgroundColor: config.color },
+                isSelected && {
+                  backgroundColor: config.color,
+                  borderColor: config.color,
+                  ...Platform.select({
+                    ios: {
+                      shadowColor: config.color,
+                      shadowOpacity: 0.4,
+                    },
+                  }),
+                },
               ]}
               onPress={() => onSelect(status)}
               disabled={isLoading}
+              activeOpacity={0.8}
             >
               <FontAwesome
                 name={config.icon as any}
-                size={18}
+                size={16}
                 color={isSelected ? '#fff' : config.color}
               />
               <Text
                 style={[
                   styles.buttonText,
-                  isSelected && styles.buttonTextSelected,
+                  { color: isSelected ? '#fff' : Theme.colors.textSecondary },
                 ]}
               >
                 {config.displayName}
@@ -74,13 +84,14 @@ export default function RSVPButtons({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 16,
-    paddingHorizontal: 16,
+    marginTop: 24,
+    marginBottom: 8,
   },
   title: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: 14,
+    color: Theme.colors.textPrimary,
   },
   buttonsRow: {
     flexDirection: 'row',
@@ -91,36 +102,43 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 8,
-    borderRadius: 12,
+    borderRadius: Theme.radius.md,
     borderWidth: 1,
-    borderColor: '#ddd',
-    backgroundColor: 'transparent',
-    gap: 4,
+    borderColor: Theme.colors.border,
+    backgroundColor: Theme.colors.backgroundCard,
+    gap: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   buttonText: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#333',
-  },
-  buttonTextSelected: {
-    color: '#fff',
+    fontWeight: '600',
   },
   countBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    backgroundColor: '#f0f0f0',
+    paddingVertical: 3,
+    borderRadius: Theme.radius.full,
+    backgroundColor: Theme.colors.chromeTint,
     marginTop: 2,
   },
   countBadgeSelected: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.25)',
   },
   countText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#666',
+    color: Theme.colors.textMuted,
   },
   countTextSelected: {
     color: '#fff',

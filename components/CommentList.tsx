@@ -1,19 +1,21 @@
 /**
  * CommentList Component
  *
- * Displays comments for an event with input for adding new ones.
+ * Industrial ethereal comment section
  */
 
+import Theme from '@/constants/Theme';
 import { Comment, formatRelativeTime } from '@/types';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import React, { useState } from 'react';
 import {
     FlatList,
     StyleSheet,
+    Text,
     TextInput,
-    TouchableOpacity
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { Text, View } from './Themed';
 
 interface CommentListProps {
   comments: Comment[];
@@ -68,7 +70,7 @@ export default function CommentList({
           onPress={() => onDeleteComment(item.id!)}
           style={styles.deleteButton}
         >
-          <FontAwesome name="trash-o" size={14} color="#999" />
+          <FontAwesome name="trash-o" size={14} color={Theme.colors.textMuted} />
         </TouchableOpacity>
       )}
     </View>
@@ -98,7 +100,7 @@ export default function CommentList({
         <TextInput
           style={styles.input}
           placeholder="Add a comment..."
-          placeholderTextColor="#999"
+          placeholderTextColor={Theme.colors.textMuted}
           value={newComment}
           onChangeText={setNewComment}
           multiline
@@ -111,8 +113,8 @@ export default function CommentList({
         >
           <FontAwesome
             name="send"
-            size={18}
-            color={newComment.trim() ? '#007AFF' : '#ccc'}
+            size={16}
+            color={newComment.trim() ? Theme.colors.accent : Theme.colors.chromeDim}
           />
         </TouchableOpacity>
       </View>
@@ -122,43 +124,48 @@ export default function CommentList({
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 16,
+    marginTop: 24,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
-    marginBottom: 12,
-    paddingHorizontal: 16,
+    marginBottom: 14,
+    color: Theme.colors.textPrimary,
   },
   emptyState: {
     padding: 24,
     alignItems: 'center',
+    backgroundColor: Theme.colors.backgroundCard,
+    borderRadius: Theme.radius.md,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
   },
   emptyText: {
-    color: '#999',
+    color: Theme.colors.textMuted,
     fontSize: 14,
   },
   commentItem: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.border,
   },
   avatar: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#007AFF',
+    backgroundColor: Theme.colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
   commentContent: {
     flex: 1,
-    marginLeft: 10,
+    marginLeft: 12,
   },
   commentHeader: {
     flexDirection: 'row',
@@ -168,15 +175,17 @@ const styles = StyleSheet.create({
   authorName: {
     fontSize: 14,
     fontWeight: '600',
+    color: Theme.colors.textPrimary,
   },
   timestamp: {
     fontSize: 11,
-    color: '#999',
+    color: Theme.colors.textMuted,
   },
   commentText: {
     fontSize: 14,
-    marginTop: 2,
+    marginTop: 4,
     lineHeight: 20,
+    color: Theme.colors.textSecondary,
   },
   deleteButton: {
     padding: 8,
@@ -184,27 +193,34 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#ddd',
-    marginTop: 8,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: Theme.colors.border,
+    marginTop: 12,
   },
   input: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 44,
     maxHeight: 100,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    borderColor: Theme.colors.border,
+    borderRadius: Theme.radius.xl,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     fontSize: 14,
-    backgroundColor: '#fff',
+    backgroundColor: Theme.colors.backgroundCard,
+    color: Theme.colors.textPrimary,
   },
   sendButton: {
     marginLeft: 10,
-    padding: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Theme.colors.backgroundCard,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sendButtonDisabled: {
     opacity: 0.5,

@@ -2,9 +2,11 @@
  * Create Event Screen
  *
  * Form for creating a new event with image upload.
+ * Industrial ethereal theme.
  */
 
 import { Text, View } from '@/components/Themed';
+import { Theme } from '@/constants/Theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useGroups } from '@/hooks/useGroups';
 import { eventsService } from '@/services/events';
@@ -12,6 +14,7 @@ import { Event, EventVisibility, EventVisibilityConfig } from '@/types';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack } from 'expo-router';
 import { Timestamp } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
@@ -216,6 +219,9 @@ export default function CreateEventScreen() {
           headerShown: true,
           title: 'Create Event',
           headerBackTitle: 'Cancel',
+          headerStyle: { backgroundColor: Theme.colors.background },
+          headerTintColor: Theme.colors.chrome,
+          headerTitleStyle: { color: Theme.colors.textPrimary },
         }}
       />
       <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
@@ -225,7 +231,7 @@ export default function CreateEventScreen() {
             <Image source={{ uri: imageUri }} style={styles.selectedImage} />
           ) : (
             <View style={styles.imagePlaceholder}>
-              <FontAwesome name="camera" size={32} color="#999" />
+              <FontAwesome name="camera" size={32} color={Theme.colors.chromeDim} />
               <Text style={styles.imagePlaceholderText}>Add Cover Photo</Text>
             </View>
           )}
@@ -239,7 +245,7 @@ export default function CreateEventScreen() {
             <TextInput
               style={styles.input}
               placeholder="Event title"
-              placeholderTextColor="#999"
+              placeholderTextColor={Theme.colors.textMuted}
               value={title}
               onChangeText={setTitle}
               maxLength={100}
@@ -252,7 +258,7 @@ export default function CreateEventScreen() {
             <TextInput
               style={[styles.input, styles.textArea]}
               placeholder="What's this event about?"
-              placeholderTextColor="#999"
+              placeholderTextColor={Theme.colors.textMuted}
               value={description}
               onChangeText={setDescription}
               multiline
@@ -270,7 +276,7 @@ export default function CreateEventScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={Theme.colors.textMuted}
                     value={webDateInput}
                     onChangeText={handleWebDateInputChange}
                     inputMode="numeric"
@@ -281,7 +287,7 @@ export default function CreateEventScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="HH:MM"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={Theme.colors.textMuted}
                     value={webTimeInput}
                     onChangeText={handleWebTimeInputChange}
                     inputMode="numeric"
@@ -295,7 +301,7 @@ export default function CreateEventScreen() {
                   style={styles.dateButton}
                   onPress={() => setShowDatePicker(true)}
                 >
-                  <FontAwesome name="calendar" size={16} color="#666" />
+                  <FontAwesome name="calendar" size={16} color={Theme.colors.chromeDim} />
                   <Text style={styles.dateButtonText}>
                     {eventDate.toLocaleDateString()}
                   </Text>
@@ -304,7 +310,7 @@ export default function CreateEventScreen() {
                   style={styles.dateButton}
                   onPress={() => setShowTimePicker(true)}
                 >
-                  <FontAwesome name="clock-o" size={16} color="#666" />
+                  <FontAwesome name="clock-o" size={16} color={Theme.colors.chromeDim} />
                   <Text style={styles.dateButtonText}>
                     {eventDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Text>
@@ -337,7 +343,7 @@ export default function CreateEventScreen() {
             <TextInput
               style={styles.input}
               placeholder="Where is it?"
-              placeholderTextColor="#999"
+              placeholderTextColor={Theme.colors.textMuted}
               value={location}
               onChangeText={setLocation}
               maxLength={200}
@@ -363,7 +369,7 @@ export default function CreateEventScreen() {
                     <FontAwesome
                       name={config.icon as any}
                       size={18}
-                      color={isSelected ? '#007AFF' : '#666'}
+                      color={isSelected ? Theme.colors.accent : Theme.colors.chromeDim}
                     />
                     <Text
                       style={[
@@ -396,7 +402,7 @@ export default function CreateEventScreen() {
                     <Text style={styles.groupSelectText}>
                       {selectedGroup?.name ?? 'Choose a group'}
                     </Text>
-                    <FontAwesome name="chevron-down" size={14} color="#666" />
+                    <FontAwesome name="chevron-down" size={14} color={Theme.colors.chromeDim} />
                   </TouchableOpacity>
                   <Text style={styles.helperText}>
                     {selectedGroup
@@ -414,11 +420,18 @@ export default function CreateEventScreen() {
             onPress={handleSubmit}
             disabled={isSubmitting}
           >
-            {isSubmitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.submitButtonText}>Create Event</Text>
-            )}
+            <LinearGradient
+              colors={[Theme.colors.accent, Theme.colors.accentMuted]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.submitButtonGradient}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color={Theme.colors.chromeBright} />
+              ) : (
+                <Text style={styles.submitButtonText}>Create Event</Text>
+              )}
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
@@ -445,6 +458,7 @@ export default function CreateEventScreen() {
                 mode="date"
                 display="spinner"
                 onChange={handleNativeDateChange}
+                themeVariant="dark"
               />
             </View>
           </View>
@@ -471,6 +485,7 @@ export default function CreateEventScreen() {
                 mode="time"
                 display="spinner"
                 onChange={handleNativeTimeChange}
+                themeVariant="dark"
               />
             </View>
           </View>
@@ -519,11 +534,13 @@ export default function CreateEventScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Theme.colors.background,
   },
   imagePicker: {
     margin: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
+    ...Theme.shadows.card,
   },
   selectedImage: {
     width: '100%',
@@ -532,39 +549,43 @@ const styles = StyleSheet.create({
   imagePlaceholder: {
     width: '100%',
     height: 200,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: Theme.colors.backgroundCard,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#ddd',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
     borderStyle: 'dashed',
   },
   imagePlaceholderText: {
     marginTop: 8,
-    color: '#999',
+    color: Theme.colors.textMuted,
     fontSize: 14,
   },
   form: {
     paddingHorizontal: 16,
+    backgroundColor: 'transparent',
   },
   field: {
     marginBottom: 20,
+    backgroundColor: 'transparent',
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 8,
-    color: '#333',
+    color: Theme.colors.chrome,
+    letterSpacing: 0.5,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: Theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Theme.colors.backgroundCard,
+    color: Theme.colors.textPrimary,
   },
   textArea: {
     minHeight: 100,
@@ -572,11 +593,17 @@ const styles = StyleSheet.create({
   },
   helperText: {
     fontSize: 12,
-    color: '#666',
+    color: Theme.colors.textMuted,
     marginTop: 6,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: Theme.colors.textMuted,
+    fontStyle: 'italic',
   },
   webFieldContainer: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   dateTimeRow: {
     flexDirection: 'row',
@@ -588,23 +615,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: Theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: Theme.colors.backgroundCard,
   },
   dateButtonText: {
     fontSize: 16,
-    color: '#333',
+    color: Theme.colors.textPrimary,
   },
   pickerModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'flex-end',
   },
   pickerModalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: Theme.colors.backgroundElevated,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 32,
@@ -616,10 +643,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ddd',
+    borderBottomColor: Theme.colors.border,
   },
   pickerDoneText: {
-    color: '#007AFF',
+    color: Theme.colors.accent,
     fontSize: 17,
     fontWeight: '600',
   },
@@ -634,44 +661,44 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ddd',
-    backgroundColor: '#fff',
+    borderColor: Theme.colors.border,
+    backgroundColor: Theme.colors.backgroundCard,
     gap: 6,
   },
   visibilityButtonSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#f0f7ff',
+    borderColor: Theme.colors.accent,
+    backgroundColor: Theme.colors.accentGlow,
   },
   visibilityText: {
     fontSize: 12,
-    color: '#666',
+    color: Theme.colors.textSecondary,
   },
   visibilityTextSelected: {
-    color: '#007AFF',
+    color: Theme.colors.accent,
     fontWeight: '600',
   },
   groupSelectButton: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: Theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: Theme.colors.backgroundCard,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   groupSelectText: {
     fontSize: 16,
-    color: '#333',
+    color: Theme.colors.textPrimary,
   },
   groupModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'flex-end',
   },
   groupModalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: Theme.colors.backgroundElevated,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
@@ -684,46 +711,50 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+    backgroundColor: 'transparent',
   },
   groupModalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111',
+    color: Theme.colors.chrome,
   },
   closeText: {
-    color: '#007AFF',
+    color: Theme.colors.accent,
     fontWeight: '600',
   },
   groupOption: {
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
+    borderBottomColor: Theme.colors.border,
   },
   groupOptionSelected: {
-    backgroundColor: '#f0f7ff',
+    backgroundColor: Theme.colors.accentGlow,
   },
   groupOptionTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#111',
+    color: Theme.colors.textPrimary,
   },
   groupOptionSubtitle: {
     fontSize: 13,
-    color: '#666',
+    color: Theme.colors.textSecondary,
     marginTop: 4,
   },
   submitButton: {
-    backgroundColor: '#007AFF',
     borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 10,
+    ...Theme.shadows.button,
+  },
+  submitButtonGradient: {
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 10,
   },
   submitButtonDisabled: {
     opacity: 0.6,
   },
   submitButtonText: {
-    color: '#fff',
+    color: Theme.colors.chromeBright,
     fontSize: 18,
     fontWeight: '600',
   },

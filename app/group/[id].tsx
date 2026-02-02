@@ -2,12 +2,15 @@
  * Group Detail Screen
  *
  * Shows group info, members, and admin actions.
+ * Industrial ethereal theme.
  */
 
 import { Text, View } from '@/components/Themed';
+import { Theme } from '@/constants/Theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useGroup } from '@/hooks/useGroups';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import {
@@ -77,7 +80,7 @@ export default function GroupDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={Theme.colors.accent} />
       </View>
     );
   }
@@ -85,7 +88,7 @@ export default function GroupDetailScreen() {
   if (!group) {
     return (
       <View style={styles.centered}>
-        <FontAwesome name="users" size={48} color="#ccc" />
+        <FontAwesome name="users" size={48} color={Theme.colors.chromeDim} />
         <Text style={styles.notFoundText}>Group not found</Text>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.backLink}>Go back</Text>
@@ -101,9 +104,12 @@ export default function GroupDetailScreen() {
           headerShown: true,
           title: group.name,
           headerBackTitle: 'Back',
+          headerStyle: { backgroundColor: Theme.colors.background },
+          headerTintColor: Theme.colors.chrome,
+          headerTitleStyle: { color: Theme.colors.textPrimary },
           headerRight: () => (
             <TouchableOpacity onPress={handleShare} style={styles.headerButton}>
-              <FontAwesome name="share" size={20} color="#007AFF" />
+              <FontAwesome name="share" size={20} color={Theme.colors.accent} />
             </TouchableOpacity>
           ),
         }}
@@ -111,11 +117,16 @@ export default function GroupDetailScreen() {
       <ScrollView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.avatar}>
+          <LinearGradient
+            colors={[Theme.colors.accent, Theme.colors.accentMuted]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.avatar}
+          >
             <Text style={styles.avatarText}>
               {group.name.charAt(0).toUpperCase()}
             </Text>
-          </View>
+          </LinearGradient>
           <Text style={styles.name}>{group.name}</Text>
           {group.description && (
             <Text style={styles.description}>{group.description}</Text>
@@ -161,12 +172,12 @@ export default function GroupDetailScreen() {
         <View style={styles.section}>
           {isOwner ? (
             <TouchableOpacity style={styles.dangerButton} onPress={handleDelete}>
-              <FontAwesome name="trash" size={18} color="#ef4444" />
+              <FontAwesome name="trash" size={18} color={Theme.colors.error} />
               <Text style={styles.dangerButtonText}>Delete Group</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={styles.dangerButton} onPress={handleLeave}>
-              <FontAwesome name="sign-out" size={18} color="#ef4444" />
+              <FontAwesome name="sign-out" size={18} color={Theme.colors.error} />
               <Text style={styles.dangerButtonText}>Leave Group</Text>
             </TouchableOpacity>
           )}
@@ -181,20 +192,22 @@ export default function GroupDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Theme.colors.background,
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: Theme.colors.background,
   },
   notFoundText: {
     fontSize: 18,
-    color: '#666',
+    color: Theme.colors.textSecondary,
     marginTop: 16,
   },
   backLink: {
     fontSize: 16,
-    color: '#007AFF',
+    color: Theme.colors.accent,
     marginTop: 12,
   },
   headerButton: {
@@ -205,102 +218,118 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 16,
     paddingHorizontal: 20,
+    backgroundColor: 'transparent',
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+    ...Theme.shadows.cardGlow,
   },
   avatarText: {
-    color: '#fff',
+    color: Theme.colors.chromeBright,
     fontSize: 36,
     fontWeight: '600',
   },
   name: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: Theme.colors.textPrimary,
   },
   description: {
     fontSize: 16,
-    color: '#666',
+    color: Theme.colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
   },
   codeBox: {
     margin: 20,
     padding: 20,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: Theme.colors.backgroundCard,
     borderRadius: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    ...Theme.shadows.card,
   },
   codeLabel: {
     fontSize: 12,
-    color: '#666',
+    color: Theme.colors.textMuted,
     marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   code: {
     fontSize: 32,
     fontWeight: 'bold',
     letterSpacing: 4,
+    color: Theme.colors.chrome,
   },
   codeHint: {
     fontSize: 12,
-    color: '#999',
+    color: Theme.colors.textMuted,
     marginTop: 8,
   },
   section: {
     paddingHorizontal: 20,
     paddingTop: 16,
+    backgroundColor: 'transparent',
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 12,
+    color: Theme.colors.chrome,
   },
   memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
+    borderBottomColor: Theme.colors.border,
+    backgroundColor: 'transparent',
   },
   memberAvatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ddd',
+    backgroundColor: Theme.colors.backgroundElevated,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Theme.colors.chromeDim,
   },
   memberAvatarText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#666',
+    color: Theme.colors.chrome,
   },
   memberInfo: {
     flex: 1,
     marginLeft: 12,
+    backgroundColor: 'transparent',
   },
   memberId: {
     fontSize: 15,
+    color: Theme.colors.textPrimary,
   },
   ownerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     marginTop: 2,
+    backgroundColor: 'transparent',
   },
   ownerText: {
     fontSize: 12,
-    color: '#f59e0b',
+    color: Theme.colors.warning,
   },
   youLabel: {
     fontSize: 12,
-    color: '#007AFF',
+    color: Theme.colors.accent,
     fontWeight: '600',
   },
   dangerButton: {
@@ -311,11 +340,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ef4444',
+    borderColor: Theme.colors.error,
     marginTop: 16,
+    backgroundColor: 'rgba(232, 139, 139, 0.1)',
   },
   dangerButtonText: {
-    color: '#ef4444',
+    color: Theme.colors.error,
     fontSize: 16,
     fontWeight: '600',
   },
